@@ -7,7 +7,7 @@
 
 A private, invite-only web app where a small group of friends' real running
 miles — auto-imported from Strava — move them along the ~1,779-mile Hobbiton →
-Mount Doom route on a film-style illustrated map. Each person races as their own
+Mount Doom route on a **16-bit pixel-art** map. Each person races as their own
 character marker *and* pools miles into a shared Fellowship total. There is no
 deadline; it is an ongoing quest. Passing landmarks (Rivendell, Moria, etc.)
 triggers themed celebrations.
@@ -21,7 +21,7 @@ The app exists to keep the group consistent and motivated in their running.
 | Journey model | **Hybrid** — individual racing markers + pooled Fellowship total |
 | Strava integration | **One-tap import** — tap "Sync" to pull recent runs on demand (OAuth + serverless token exchange). No always-on server. |
 | Landmarks | **Big milestone moments** — badge + themed message + lore when passing |
-| Map style | **Film-style illustrated background image** (Option A), sourced legally |
+| Map style | **16-bit pixel-art** top-down map; side-scroll pixel scenes for celebrations |
 | Journey scale | **Long-haul, no deadline** — full ~1,779 mi, pooled; the Aug 28 half is a checkpoint |
 | Group scope | **Invite-link based** — private, join via shareable invite token |
 | Characters | Each person picks a Fellowship archetype as their marker + avatar |
@@ -34,15 +34,18 @@ The app exists to keep the group consistent and motivated in their running.
 2. **Pick your character** (Frodo/hobbit, Sam, Aragorn/ranger-king, Legolas/elf
    archer, Gimli/dwarf, Gandalf/grey wizard, Boromir, etc.).
 3. **Tap Sync.** New runs import from Strava, totals update, the map animates.
-4. **The map** shows every runner's marker racing down the same road, a red
-   trail for the pooled Fellowship progress, illustrated landmarks, and a glowing
-   Mount Doom at the finish.
+4. **The map** is a top-down 16-bit pixel-art world (rolling green hills,
+   pixel forests, rivers, mountain ranges, a volcanic Mount Doom). It shows
+   every runner's pixel-sprite marker racing down the same road, a highlighted
+   trail for the pooled Fellowship progress, pixel-art landmarks, and Mount Doom
+   at the finish.
 5. **The stats panel** shows both your % and the Fellowship % side by side, with
    a **Me / Fellowship toggle** that switches the detail view (your next
    landmark & rank, or the group's next landmark & pooled progress).
-6. **Passing a landmark** fires a celebration modal: a themed badge, a message
-   ("You've reached Rivendell!"), and a bit of lore. Both personal and
-   Fellowship-level crossings can trigger these.
+6. **Passing a landmark** fires a celebration modal built around a **side-scroll
+   pixel-art scene** of that place (e.g. the fellowship crossing a bridge past an
+   elven city), plus a themed badge, a message ("You've reached Rivendell!"), and
+   a bit of lore. Both personal and Fellowship-level crossings can trigger these.
 
 ## Architecture
 
@@ -51,9 +54,12 @@ server to maintain.
 
 - **Frontend:** React + Vite single-page app (TypeScript), deployed on Vercel
   free tier. Mobile-first (this is opened on phones).
-- **Map rendering:** Leaflet using the illustrated map as a static image layer
+- **Map rendering:** Leaflet using the pixel-art map as a static image layer
   (`L.CRS.Simple` + `L.imageOverlay`), so markers and the route are placed in
-  image pixel coordinates and the map pans/zooms on mobile.
+  image pixel coordinates and the map pans/zooms on mobile. Apply
+  `image-rendering: pixelated` (and integer/nearest-neighbor scaling) so the
+  pixel art stays crisp when zoomed rather than blurring. Character markers are
+  small pixel sprites; consider a 2-frame idle/bob animation for life.
 - **Serverless functions** (Vercel functions):
   - `strava/callback` — OAuth authorization-code → token exchange (holds the
     Strava client secret, which cannot live in the browser).
@@ -162,97 +168,117 @@ quests, walking/cycling support.
 
 ## Assets Note
 
-The illustrated map and character art are **produced outside this app** —
-AI-generated in a cinematic fantasy style, commissioned, or Creative-Commons
-licensed — and integrated into the app. The build code places the route,
-positions markers, and animates landmarks around whatever image assets are
-supplied.
+**Art style: 16-bit pixel art** — a top-down pixel-art world map (rolling hills,
+pixel forests, rivers, mountains, a volcanic Mount Doom) for the dashboard, and
+side-scroll pixel-art scenes for landmark celebrations and the character-select
+screen. Character markers are small pixel sprites.
+
+All art is **produced outside this app** — AI-generated, commissioned, or
+Creative-Commons licensed — and integrated by the build code, which places the
+route, positions sprite markers, and animates landmarks around whatever assets
+are supplied.
 
 **Legal note:** This is a private, non-commercial app for a small group of
-friends and is not distributed publicly. The official Tolkien/film maps and
-character designs are copyrighted; to stay clean we use *original* art generated
-or commissioned in a similar aesthetic rather than the studio's actual assets.
-"Non-commercial" does not by itself make copyrighted material legal to use — it
-only limits damages — so original, generated, or licensed art is the
-responsible path.
+friends, not distributed publicly. We use *original* pixel art in a
+high-fantasy aesthetic rather than any studio's copyrighted maps or character
+designs. Original stylized pixel art keeps the project cleanly clear of the
+copyrighted source material.
 
 ---
 
-## Appendix A — Asset Generation Prompts
+## Appendix A — Asset Generation Prompts (Pixel Art)
 
 Paste these into an image generator (ChatGPT/DALL·E, Gemini, or Midjourney).
-They are written to produce **original cinematic-fantasy art** — not copies of
-the films — which is both the legally-clean choice and what these tools do best.
-Adjust names/details to taste.
+They target an **original 16-bit pixel-art high-fantasy style** — matching the
+reference look (top-down world map + side-scroll scenes) — which is both the
+legally-clean choice and a cohesive, distinctive aesthetic. Adjust to taste.
 
-### A1. Map background (the centerpiece)
+**Style keywords to reuse across every prompt** (keeps the set cohesive):
+> 16-bit pixel art, retro SNES/JRPG style, limited muted palette, clean crisp
+> pixels, no anti-aliasing, no text, no watermark.
 
-> A hand-painted high-fantasy world map on aged parchment, cinematic and highly
-> detailed, in the style of an epic adventure film's opening map. A long winding
-> journey path crosses the map from a lush green rolling-hills homeland region
-> in the northwest to a dark volcanic wasteland with a smoking mountain in the
-> southeast. Along the way: misty snow-capped mountain ranges, dense forests, a
-> deep river, an elven valley, a golden woodland, a great white walled city, and
-> a shadowy fortress. Ornate decorative border, a compass rose, subtle ink
-> lettering placeholders for region names, soft aged texture, warm sepia and
-> muted green/blue tones. Top-down cartographic view, no modern elements, no
-> text logos. Ultra-detailed, 4K, wide landscape orientation.
+### A1. Top-down world map (the centerpiece)
 
-Tips: generate at the highest resolution available and in landscape; ask for a
-version "with no labels" so the app can place its own landmark text cleanly.
+> A top-down 16-bit pixel-art fantasy world map, retro SNES JRPG overworld
+> style. A long winding path crosses from a lush green rolling-hills homeland in
+> the northwest to a dark volcanic wasteland with a smoking mountain in the
+> southeast. Along the way: pixel forests of pine trees, a winding blue river,
+> grey pixel mountain ranges, an elven valley, a golden-leaf woodland, a white
+> walled city, and a shadowy fortress. Muted natural palette (greens, blues,
+> earthy browns), clean crisp pixels, no anti-aliasing, no text labels,
+> no watermark. Tall/portrait or wide orientation, high resolution.
 
-### A2. Character markers (reusable template)
+Tips: request **no text labels** so the app places its own; generate large so it
+holds up when zoomed. A tall vertical map (like the reference) suits a phone.
 
-Generate each as a **circular portrait icon on a transparent or plain
-background** so it drops onto the map as a marker. Base template:
+### A2. Character sprite markers (reusable template)
 
-> A circular character portrait icon, painted cinematic fantasy style, bust
-> framing, facing forward, clean plain background, subtle golden ring border,
-> consistent art style across a set. [CHARACTER DESCRIPTION]. High detail,
-> centered, suitable as a game map marker.
+Generate each as a **small pixel-art character sprite on a transparent
+background**, so it drops onto the map as a marker. Base template:
+
+> A single 16-bit pixel-art character sprite, retro JRPG style, full body,
+> front-facing, standing, on a transparent background, clean crisp pixels, no
+> anti-aliasing, small game-marker size, no text. [CHARACTER DESCRIPTION].
 
 Swap `[CHARACTER DESCRIPTION]` per person (original archetypes, not film
 likenesses):
 
-- **Hobbit adventurer** — "a young hobbit with curly hair, a green travel cloak,
-  determined expression"
-- **Loyal gardener companion** — "a sturdy hobbit with sandy hair, a brown cloak
-  and a cooking pot, kind face"
-- **Ranger king** — "a rugged human ranger with dark hair, weathered cloak, a
-  noble bearing"
-- **Elf archer** — "a fair-haired elf with a longbow and quiver, elegant green
-  and silver garb"
-- **Dwarf warrior** — "a stout red-bearded dwarf in armor with a battle axe,
-  fierce grin"
-- **Grey wizard** — "an old wizard with a long grey beard, wide-brimmed grey hat
-  and staff, wise eyes"
-- **Warrior of the white city** — "a tall human warrior with a horn and a shield
-  bearing a white tree emblem"
+- **Hobbit adventurer** — "a young barefoot hobbit with curly brown hair and a
+  green travelling cloak"
+- **Loyal gardener companion** — "a sturdy sandy-haired hobbit with a brown
+  cloak and a small pack"
+- **Ranger king** — "a rugged human ranger with dark hair, a weathered grey
+  cloak and a sword"
+- **Elf archer** — "a fair-haired elf in green and silver with a longbow and
+  quiver"
+- **Dwarf warrior** — "a stout red-bearded dwarf in armor with a battle axe"
+- **Grey wizard** — "an old wizard with a long grey beard, a wide grey hat and a
+  wooden staff"
+- **Warrior of the white city** — "a tall human warrior in silver armor with a
+  horn"
 
-Ask for "the same art style and framing" each time so the set looks cohesive.
+Ask for "the same sprite size, style, and framing" each time so the party looks
+cohesive. Optional: request a **2-frame idle animation** (or a small sprite
+sheet) so markers gently bob on the map.
 
-### A3. Landmark milestone badges
+### A3. Landmark celebration scenes (side-scroll)
 
-> A set of ornate circular achievement badges in painted fantasy style, gold and
-> jewel-tone, each with a decorative border, on a plain background: [1] an elven
-> valley waterfall, [2] a dark mine gate in a mountain, [3] a golden forest, [4]
-> a great waterfall, [5] a white walled city, [6] a dark fortress gate, [7] a
-> smoking volcano. Consistent style, celebratory, suitable as reward badges.
+One per landmark, matching the reference side-scroll style:
 
-### A4. Mount Doom finish / celebration art (optional)
+> A 16-bit pixel-art side-scroll landscape scene, retro JRPG style, atmospheric
+> lighting, muted palette, clean crisp pixels, no text, no watermark. Scene:
+> [SCENE]. Wide/landscape framing suitable for a full-screen celebration banner.
 
-> A dramatic painted fantasy illustration of a lone smoking volcanic mountain
-> under a red-and-black stormy sky, glowing lava, epic cinematic lighting,
-> celebratory "journey complete" mood, no text. Vertical or square framing for a
-> full-screen victory modal.
+Swap `[SCENE]` per landmark:
 
-### A5. Character selection screen art (optional)
+- **Rivendell** — "an elven city of graceful buildings among misty cliffs and
+  waterfalls, golden autumn trees, a stone bridge, warm sunrise light"
+- **Moria** — "a huge dark stone gate set into a mountainside beside a still
+  black lake, torchlight"
+- **Lothlórien** — "a glowing golden forest of tall silver-trunked trees with
+  soft light"
+- **Rauros Falls** — "a colossal waterfall over a great river with two tall
+  stone statues flanking it"
+- **Minas Tirith** — "a white multi-tiered mountain city gleaming at dawn"
+- **The Black Gate** — "a massive iron gate before a dark ashen wasteland,
+  ominous red sky"
+- **Mount Doom** — "a lone smoking volcano with glowing lava cracks under a
+  red-and-black stormy sky"
 
-> A row of painted fantasy hero portraits in consistent cinematic style,
-> full-body, neutral standing poses, on a subtle parchment background, evenly
-> spaced, suitable for a character-select screen. [reuse the character
-> descriptions from A2].
+### A4. Landmark badges (optional, pixel style)
 
-**Delivery:** hand me the resulting image files (PNG; transparent background for
-markers/badges where possible) and note which file is which. The app config
-maps each character key to its marker image and each landmark to its badge.
+> A set of small 16-bit pixel-art achievement badge icons, circular, clean crisp
+> pixels, transparent background, no text: an elven waterfall, a dark mine gate,
+> a golden forest, a great waterfall, a white city, a dark fortress gate, a
+> smoking volcano. Consistent pixel style, celebratory.
+
+### A5. Character-select screen backdrop (optional)
+
+> A 16-bit pixel-art side-scroll scene of a party of fantasy heroes standing on
+> a stone bridge before a misty elven city with golden autumn trees, retro JRPG
+> style, muted warm palette, clean crisp pixels, no text — used as a
+> character-select background.
+
+**Delivery:** hand me the resulting image files (PNG; **transparent background**
+for sprites/badges). Note which file is which. The app config maps each
+character key to its sprite, and each landmark to its scene + badge.
