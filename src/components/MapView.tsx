@@ -12,7 +12,7 @@ const WIDTH = 941;
 const bounds: L.LatLngBoundsExpression = [[0, 0], [HEIGHT, WIDTH]];
 const CHAR_W = 46;
 const CHAR_H = 69; // 2:3, matches the 1024x1536 sprite art
-const ANIM_MS = 2600;
+const ANIM_MS = 4500;
 
 export interface MapFocus {
   id: string;
@@ -28,8 +28,8 @@ function latFor(imgY: number): number {
   return HEIGHT - imgY;
 }
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 // The route from the start up to `miles`, as lat/lng points, nudged sideways by
@@ -150,7 +150,7 @@ export function MapView({
     const tick = (now: number) => {
       if (!start) start = now;
       const e = Math.min(1, (now - start) / ANIM_MS);
-      setT(easeOutCubic(e));
+      setT(easeInOutCubic(e));
       if (e < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
