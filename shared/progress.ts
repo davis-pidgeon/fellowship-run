@@ -1,4 +1,4 @@
-import type { Waypoint, Position } from "./types";
+import type { Waypoint, Position } from "./types.js";
 
 export function positionForMiles(miles: number, route: Waypoint[]): Position {
   const first = route[0];

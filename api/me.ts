@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getServiceClient } from "./_lib/supabase";
-import { readSessionUserId } from "./_lib/http";
+import { getServiceClient } from "./_lib/supabase.js";
+import { readSessionUserId } from "./_lib/http.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = await readSessionUserId(req);

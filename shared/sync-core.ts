@@ -1,5 +1,5 @@
-import type { RunActivity, Waypoint, Milestone } from "./types";
-import { crossedLandmarks } from "./milestones";
+import type { RunActivity, Waypoint, Milestone } from "./types.js";
+import { crossedLandmarks } from "./milestones.js";
 
 export interface SyncComputeInput {
   fetched: RunActivity[];

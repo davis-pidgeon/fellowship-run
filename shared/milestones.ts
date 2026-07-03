@@ -1,4 +1,4 @@
-import type { Waypoint, Milestone } from "./types";
+import type { Waypoint, Milestone } from "./types.js";
 
 export function crossedLandmarks(
   oldMiles: number,

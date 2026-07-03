@@ -1,4 +1,4 @@
-import type { CharacterKey } from "./types";
+import type { CharacterKey } from "./types.js";
 
 export interface CharacterDef {
   key: CharacterKey;

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { randomBytes } from "node:crypto";
-import { getServiceClient } from "./_lib/supabase";
+import { getServiceClient } from "./_lib/supabase.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const db = getServiceClient();

@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { exchangeCode } from "../_lib/strava";
-import { encrypt } from "../_lib/crypto";
-import { signSession } from "../_lib/session";
-import { sessionCookie } from "../_lib/http";
-import { getServiceClient } from "../_lib/supabase";
-import { getEnv } from "../_lib/env";
+import { exchangeCode } from "../_lib/strava.js";
+import { encrypt } from "../_lib/crypto.js";
+import { signSession } from "../_lib/session.js";
+import { sessionCookie } from "../_lib/http.js";
+import { getServiceClient } from "../_lib/supabase.js";
+import { getEnv } from "../_lib/env.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const code = req.query.code as string | undefined;

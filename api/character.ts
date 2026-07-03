@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getServiceClient } from "./_lib/supabase";
-import { readSessionUserId } from "./_lib/http";
-import { CHARACTERS, MARKER_COLORS } from "../shared/characters";
-import type { CharacterKey } from "../shared/types";
+import { getServiceClient } from "./_lib/supabase.js";
+import { readSessionUserId } from "./_lib/http.js";
+import { CHARACTERS, MARKER_COLORS } from "../shared/characters.js";
+import type { CharacterKey } from "../shared/types.js";
 
 const VALID = new Set(CHARACTERS.map((c) => c.key));
 const VALID_COLORS = new Set(MARKER_COLORS.map((c) => c.hex));

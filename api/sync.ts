@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { readSessionUserId } from "./_lib/http";
-import { getServiceClient } from "./_lib/supabase";
-import { getEnv } from "./_lib/env";
-import { decrypt, encrypt } from "./_lib/crypto";
-import { refreshTokens, fetchRunsSince } from "./_lib/strava";
-import { computeSync } from "../shared/sync-core";
-import { crossedLandmarks } from "../shared/milestones";
-import { ROUTE } from "../shared/route";
+import { readSessionUserId } from "./_lib/http.js";
+import { getServiceClient } from "./_lib/supabase.js";
+import { getEnv } from "./_lib/env.js";
+import { decrypt, encrypt } from "./_lib/crypto.js";
+import { refreshTokens, fetchRunsSince } from "./_lib/strava.js";
+import { computeSync } from "../shared/sync-core.js";
+import { crossedLandmarks } from "../shared/milestones.js";
+import { ROUTE } from "../shared/route.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();

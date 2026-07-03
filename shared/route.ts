@@ -1,4 +1,4 @@
-import type { Waypoint } from "./types";
+import type { Waypoint } from "./types.js";
 
 // Pixel coordinates are in the map image's own space (941 x 1672, matching
 // src/assets/map.png). Leaflet CRS.Simple maps a Position to LatLng [y, x].

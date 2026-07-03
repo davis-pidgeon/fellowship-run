@@ -1,5 +1,5 @@
-import type { RunActivity } from "../../shared/types";
-import { metersToMiles } from "../../shared/units";
+import type { RunActivity } from "../../shared/types.js";
+import { metersToMiles } from "../../shared/units.js";
 
 export interface StravaTokens {
   accessToken: string;

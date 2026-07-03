@@ -1,5 +1,5 @@
-import { verifySession } from "./session";
-import { getEnv } from "./env";
+import { verifySession } from "./session.js";
+import { getEnv } from "./env.js";
 
 export const SESSION_COOKIE = "fr_session";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
