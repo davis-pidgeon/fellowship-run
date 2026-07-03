@@ -2,12 +2,20 @@
 .leaflet-image-layer { image-rendering: pixelated; }
 .runner-sprite { image-rendering: pixelated; filter: drop-shadow(0 0 1.5px #000) drop-shadow(0 2px 2px rgba(0,0,0,0.55)); }
 .fellowship-marker { font-size: 26px; line-height: 26px; text-align: center; filter: drop-shadow(0 0 2px #000); }
-.stats-panel { position: absolute; top: 12px; right: 12px; width: 220px;
+.stats-panel { position: absolute; top: 12px; right: 12px; width: 264px;
   background: rgba(30,22,14,0.88); color: #f0e2c0; border: 2px solid #8a6b42;
   border-radius: 8px; padding: 12px; font-family: Georgia, serif; z-index: 1000; }
 .headline { display: flex; justify-content: space-between; }
 .progress-bar { height: 8px; background: #4a3a26; border-radius: 4px; overflow: hidden; margin: 6px 0; }
-.progress-fill { height: 100%; background: #c0392b; }
+.progress-fill { height: 100%; background: #c0392b; transition: width 0.4s ease, background 0.2s ease; }
+.panel-top { display: flex; justify-content: flex-end; height: 14px; margin: -4px -4px 2px 0; }
+.panel-collapse { background: transparent; border: none; color: #f0e2c0; font-size: 15px; line-height: 1;
+  cursor: pointer; opacity: 0.7; padding: 0 4px; }
+.panel-collapse:hover { opacity: 1; }
+.panel-details { overflow: hidden; max-height: 640px; opacity: 1;
+  transition: max-height 0.4s ease, opacity 0.28s ease; }
+.stats-panel.is-collapsed .panel-details { max-height: 0; opacity: 0; }
+.stats-panel.is-collapsed { cursor: pointer; }
 .lens-toggle button[aria-pressed="true"] { background: #c0392b; color: #fff; }
 .sync-btn { width: 100%; margin-top: 10px; background: #c0392b; color: #fff;
   border: none; border-radius: 6px; padding: 8px; }
@@ -99,12 +107,27 @@ body { margin: 0; }
 .character-card.current { box-shadow: 0 0 0 2px #fff; }
 
 /* Side-quest note — an aged letter, deliberately distinct from scene postcards */
-.quest-note { position: relative; max-width: 460px; width: 88vw; padding: 26px 24px 22px;
-  background: linear-gradient(#efe3c2, #e2d0a0); color: #3a2c14; border: 1px solid #b79b63;
-  border-radius: 3px; box-shadow: 0 0 0 6px #6b4a2b, 0 10px 30px rgba(0,0,0,0.55);
-  font-family: Georgia, serif; text-align: center; }
-.quest-seal { font-size: 26px; color: #7a1f1f; margin-bottom: 2px; }
-.quest-photo { width: 100%; max-height: 240px; object-fit: cover; image-rendering: pixelated;
-  border: 2px solid #6b4a2b; border-radius: 2px; margin-bottom: 12px; display: block; }
-.quest-title { margin: 4px 0 10px; color: #5a3d1a; letter-spacing: 0.5px; }
-.quest-story { line-height: 1.6; font-style: italic; white-space: pre-wrap; }
+/* A weathered, discovered letter — dark leather backing, tilt, wax seal, aged
+   vignette. Intentionally unlike the bright rectangular scene postcards. */
+.quest-note { position: relative; max-width: 430px; width: 86vw; margin-top: 14px;
+  padding: 30px 30px 26px; color: #2b2016; font-family: Georgia, "Times New Roman", serif;
+  text-align: center; transform: rotate(-1.4deg); border: 2px solid #7a5a2a; border-radius: 2px;
+  background: radial-gradient(130% 100% at 50% 0%, #f2e6c4 0%, #ddc999 55%, #bfa66c 100%);
+  box-shadow: 0 0 0 9px #2b2016, 0 0 0 11px #574427, 0 18px 44px rgba(0,0,0,0.65),
+    inset 0 0 55px rgba(94,64,22,0.3); }
+.quest-wax { position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid #4a1010; z-index: 1;
+  background: radial-gradient(circle at 40% 35%, #b23a3a, #6e1616);
+  color: #f0d8cf; display: flex; align-items: center; justify-content: center; font-size: 18px;
+  box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
+.quest-eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: #8a6a38; margin: 6px 0 6px; }
+.quest-photo { width: 100%; max-height: 210px; object-fit: cover; image-rendering: pixelated;
+  border: 3px solid #4a3a24; margin: 4px 0 12px; display: block; filter: sepia(0.15); }
+.quest-title { margin: 2px 0 8px; color: #4a2f12; font-size: 22px; font-variant: small-caps;
+  letter-spacing: 1px; }
+.quest-divider { height: 2px; width: 62%; margin: 4px auto 14px;
+  background: linear-gradient(90deg, transparent, #8a6b42 20%, #8a6b42 80%, transparent); }
+.quest-story { line-height: 1.75; font-style: italic; white-space: pre-wrap; font-size: 15px; }
+.quest-note .passport-close { color: #f0e2c0; top: 6px; right: 10px; z-index: 2;
+  text-shadow: 0 1px 2px #000; }

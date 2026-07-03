@@ -1,4 +1,4 @@
-import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import type { Member } from "../api-client";
@@ -175,18 +175,28 @@ function FocusFlyer({ members, focus }: { members: Member[]; focus: MapFocus | n
   return null;
 }
 
+function NavWatcher({ onNavigate }: { onNavigate: () => void }) {
+  useMapEvents({
+    dragstart: () => onNavigate(),
+    zoomstart: () => onNavigate(),
+  });
+  return null;
+}
+
 export function MapView({
   members,
   fellowshipMiles,
   focus,
   myMiles,
   onOpenQuest,
+  onNavigate,
 }: {
   members: Member[];
   fellowshipMiles: number;
   focus: MapFocus | null;
   myMiles: number;
   onOpenQuest: (q: SideQuest) => void;
+  onNavigate: () => void;
 }) {
   // Intro animation: everyone starts at mile 0 and eases out to their position.
   const [t, setT] = useState(0);
@@ -223,6 +233,7 @@ export function MapView({
       style={{ height: "100vh", width: "100vw", background: "#000" }}
     >
       <FitCover />
+      <NavWatcher onNavigate={onNavigate} />
       <FocusFlyer members={members} focus={focus} />
       <ImageOverlay url={mapUrl} bounds={bounds} zIndex={0} />
 

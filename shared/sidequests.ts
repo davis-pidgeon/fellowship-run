@@ -20,6 +20,15 @@ export interface SideQuest {
 // --- TEST DATA (placeholder flavor text; replace with your real notes) ---
 export const SIDE_QUESTS: SideQuest[] = [
   {
+    id: "first-step",
+    revealMiles: 1,
+    x: 680,
+    y: 125,
+    title: "The First Step",
+    story:
+      "A worn signpost at the edge of the village points toward the wide world beyond. Someone has tucked a spare handkerchief and a note behind it: 'You're off, then! Mind your feet, and don't forget to look back now and again.'",
+  },
+  {
     id: "milestone-cake",
     revealMiles: 5,
     x: 180,

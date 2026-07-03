@@ -15,6 +15,7 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
   const [badges, setBadges] = useState<Milestone[]>([]);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [quest, setQuest] = useState<SideQuest | null>(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   const onSync = async () => {
     setSyncing(true);
@@ -39,12 +40,15 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
         focus={focus}
         myMiles={me.user.totalMiles}
         onOpenQuest={setQuest}
+        onNavigate={() => setPanelCollapsed(true)}
       />
       <StatsPanel
         me={me}
         onSync={onSync}
         syncing={syncing}
         onSelectMember={(id) => setFocus({ id, nonce: Date.now() })}
+        collapsed={panelCollapsed}
+        onCollapsedChange={setPanelCollapsed}
       />
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
       <Passport totalMiles={me.user.totalMiles} />
