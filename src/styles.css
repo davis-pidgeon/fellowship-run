@@ -1,0 +1,16 @@
+.leaflet-container { background: #6b8f47; }
+.leaflet-image-layer { image-rendering: pixelated; }
+.runner-sprite { image-rendering: pixelated; }
+.stats-panel { position: absolute; top: 12px; right: 12px; width: 220px;
+  background: rgba(30,22,14,0.88); color: #f0e2c0; border: 2px solid #8a6b42;
+  border-radius: 8px; padding: 12px; font-family: Georgia, serif; z-index: 1000; }
+.headline { display: flex; justify-content: space-between; }
+.progress-bar { height: 8px; background: #4a3a26; border-radius: 4px; overflow: hidden; margin: 6px 0; }
+.progress-fill { height: 100%; background: #c0392b; }
+.lens-toggle button[aria-pressed="true"] { background: #c0392b; color: #fff; }
+.sync-btn { width: 100%; margin-top: 10px; background: #c0392b; color: #fff;
+  border: none; border-radius: 6px; padding: 8px; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.pixel-frame { image-rendering: pixelated; background: #efe0bd; padding: 20px;
+  border: 4px solid #6b4a2b; max-width: 480px; text-align: center; }
