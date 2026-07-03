@@ -49,6 +49,17 @@ export function StatsPanel({
     >
       <div className="panel-top">
         <button
+          className="panel-refresh"
+          onClick={(e) => {
+            e.stopPropagation();
+            window.location.reload();
+          }}
+          title="Refresh"
+          aria-label="Refresh page"
+        >
+          ↻
+        </button>
+        <button
           className="panel-collapse"
           onClick={(e) => {
             e.stopPropagation();

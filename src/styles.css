@@ -8,7 +8,12 @@
 .headline { display: flex; justify-content: space-between; }
 .progress-bar { height: 8px; background: #4a3a26; border-radius: 4px; overflow: hidden; margin: 6px 0; }
 .progress-fill { height: 100%; background: #c0392b; transition: width 0.4s ease, background 0.2s ease; }
-.panel-top { display: flex; justify-content: flex-end; height: 14px; margin: -4px -4px 2px 0; }
+.panel-top { display: flex; justify-content: space-between; align-items: center; height: 14px; margin: -4px -4px 2px -4px; }
+.panel-refresh { background: transparent; border: none; color: #f0e2c0; font-size: 15px; line-height: 1;
+  cursor: pointer; opacity: 0.7; padding: 0 4px; display: inline-block; }
+.panel-refresh:hover { opacity: 1; }
+.panel-refresh.spinning { animation: panel-spin 0.8s linear; }
+@keyframes panel-spin { to { transform: rotate(360deg); } }
 .panel-collapse { background: transparent; border: none; color: #f0e2c0; font-size: 15px; line-height: 1;
   cursor: pointer; opacity: 0.7; padding: 0 4px; }
 .panel-collapse:hover { opacity: 1; }
