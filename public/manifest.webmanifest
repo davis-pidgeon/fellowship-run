@@ -1,0 +1,13 @@
+{
+  "name": "The Fellowship's Run",
+  "short_name": "Fellowship Run",
+  "description": "Run from the Shire to Mount Doom with your friends.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14100a",
+  "theme_color": "#14100a",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
