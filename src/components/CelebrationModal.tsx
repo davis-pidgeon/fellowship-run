@@ -16,7 +16,24 @@ export function CelebrationModal({ badges, onClose }: {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
       <div className="modal pixel-frame">
-        <div className="badge-scene" data-landmark={badge.landmarkId} />
+        <img
+          className="badge-scene"
+          data-landmark={badge.landmarkId}
+          src={`/scenes/${badge.landmarkId}.png`}
+          alt={badge.name}
+          style={{
+            width: "100%",
+            maxHeight: 220,
+            objectFit: "cover",
+            imageRendering: "pixelated",
+            borderRadius: 4,
+            marginBottom: 12,
+            display: "block",
+          }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
         <h2>{badge.name}</h2>
         <p className="message">{badge.message}</p>
         <p className="lore">{badge.lore}</p>

@@ -4,10 +4,10 @@ import type { Member } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
 import { ROUTE as ROUTE_WAYPOINTS } from "../../shared/route";
 import { CHARACTERS } from "../../shared/characters";
-import mapUrl from "../assets/placeholder-map.png";
+import mapUrl from "../assets/map.png";
 
-const HEIGHT = 1200;
-const WIDTH = 600;
+const HEIGHT = 1672;
+const WIDTH = 941;
 const bounds: L.LatLngBoundsExpression = [[0, 0], [HEIGHT, WIDTH]];
 
 function spriteFor(character: string | null): string {

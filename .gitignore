@@ -5,3 +5,4 @@ dist/
 .superpowers/
 .vercel/
 tsconfig.tsbuildinfo
+.DS_Store
