@@ -104,18 +104,22 @@ const fellowshipIcon = L.divIcon({
 function FitCover() {
   const map = useMap();
   useEffect(() => {
-    const b = L.latLngBounds([[0, 0], [HEIGHT, WIDTH]]);
-    // Cover the viewport and pin to the top edge (the Shire). maxBounds clamps
-    // the center so the viewport's top aligns with the map's top.
+    // Deterministically cover the viewport (fill whichever dimension needs it)
+    // and place the center so the map's TOP edge sits at the top of the screen.
     const pin = () => {
       map.invalidateSize(false);
-      const cover = map.getBoundsZoom(b, true);
-      map.setMinZoom(cover);
-      map.setView([HEIGHT, WIDTH / 2], cover, { animate: false });
+      const size = map.getSize();
+      if (!size.x || !size.y) return;
+      const scale = Math.max(size.x / WIDTH, size.y / HEIGHT); // cover
+      const zoom = Math.log2(scale);
+      map.setMinZoom(zoom);
+      map.setMaxZoom(zoom + 4);
+      const halfLat = size.y / 2 / scale; // half the viewport height in map units
+      const centerLat = HEIGHT - halfLat; // top-aligned
+      map.setView([centerLat, WIDTH / 2], zoom, { animate: false });
     };
     map.whenReady(pin);
-    // Re-pin once the container's real size has settled (initial layout).
-    const t = setTimeout(pin, 80);
+    const t = setTimeout(pin, 80); // re-pin once layout settles
     map.on("resize", pin);
     return () => {
       clearTimeout(t);
@@ -168,11 +172,11 @@ export function MapView({
   return (
     <MapContainer
       crs={L.CRS.Simple}
-      bounds={bounds}
+      center={[HEIGHT / 2, WIDTH / 2]}
+      zoom={0}
       maxBounds={bounds}
       maxBoundsViscosity={1.0}
       zoomSnap={0}
-      maxZoom={5}
       style={{ height: "100vh", width: "100vw", background: "#000" }}
     >
       <FitCover />
