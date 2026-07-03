@@ -5,6 +5,7 @@ import type { Member } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
 import { ROUTE as ROUTE_WAYPOINTS } from "../../shared/route";
 import { CHARACTERS, DEFAULT_COLOR } from "../../shared/characters";
+import { SIDE_QUESTS, type SideQuest } from "../../shared/sidequests";
 import mapUrl from "../assets/map.png";
 
 const HEIGHT = 1672;
@@ -12,6 +13,8 @@ const WIDTH = 941;
 const bounds: L.LatLngBoundsExpression = [[0, 0], [HEIGHT, WIDTH]];
 const CHAR_W = 46;
 const CHAR_H = 69; // 2:3, matches the 1024x1536 sprite art
+const QUEST_W = 50;
+const QUEST_H = 28; // envelope aspect
 const ANIM_MS = 4500;
 
 export interface MapFocus {
@@ -77,6 +80,33 @@ function RunnerOverlay({ member, miles }: { member: Member; miles: number }) {
             .setContent(`${member.displayName} — ${Math.round(member.totalMiles)} mi`)
             .openOn(map);
         },
+      }}
+    />
+  );
+}
+
+function QuestOverlay({ quest, onOpen }: { quest: SideQuest; onOpen: (q: SideQuest) => void }) {
+  const lat = latFor(quest.y);
+  const b: L.LatLngBoundsExpression = [
+    [lat - QUEST_H / 2, quest.x - QUEST_W / 2],
+    [lat + QUEST_H / 2, quest.x + QUEST_W / 2],
+  ];
+  return (
+    <ImageOverlay
+      url="/envelope.png"
+      bounds={b}
+      zIndex={640}
+      interactive
+      eventHandlers={{
+        add: (e) => {
+          const el = (e.target as L.ImageOverlay).getElement();
+          if (el) {
+            el.style.imageRendering = "pixelated";
+            el.style.filter = "drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff)";
+            el.style.cursor = "pointer";
+          }
+        },
+        click: () => onOpen(quest),
       }}
     />
   );
@@ -149,10 +179,14 @@ export function MapView({
   members,
   fellowshipMiles,
   focus,
+  myMiles,
+  onOpenQuest,
 }: {
   members: Member[];
   fellowshipMiles: number;
   focus: MapFocus | null;
+  myMiles: number;
+  onOpenQuest: (q: SideQuest) => void;
 }) {
   // Intro animation: everyone starts at mile 0 and eases out to their position.
   const [t, setT] = useState(0);
@@ -216,6 +250,10 @@ export function MapView({
 
       {members.map((m) => (
         <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} />
+      ))}
+
+      {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles).map((q) => (
+        <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />
       ))}
 
       <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon}>

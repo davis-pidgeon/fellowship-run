@@ -6,11 +6,15 @@ import { MapView, type MapFocus } from "../components/MapView";
 import { StatsPanel } from "../components/StatsPanel";
 import { CelebrationModal } from "../components/CelebrationModal";
 import { Passport } from "../components/Passport";
+import { Settings } from "../components/Settings";
+import { QuestNote } from "../components/QuestNote";
+import type { SideQuest } from "../../shared/sidequests";
 
 export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: () => void }) {
   const [syncing, setSyncing] = useState(false);
   const [badges, setBadges] = useState<Milestone[]>([]);
   const [focus, setFocus] = useState<MapFocus | null>(null);
+  const [quest, setQuest] = useState<SideQuest | null>(null);
 
   const onSync = async () => {
     setSyncing(true);
@@ -29,7 +33,13 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
 
   return (
     <div className="dashboard">
-      <MapView members={me.members} fellowshipMiles={me.fellowshipMiles} focus={focus} />
+      <MapView
+        members={me.members}
+        fellowshipMiles={me.fellowshipMiles}
+        focus={focus}
+        myMiles={me.user.totalMiles}
+        onOpenQuest={setQuest}
+      />
       <StatsPanel
         me={me}
         onSync={onSync}
@@ -38,6 +48,8 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
       />
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
       <Passport totalMiles={me.user.totalMiles} />
+      <Settings me={me} refresh={refresh} />
+      <QuestNote quest={quest} onClose={() => setQuest(null)} />
     </div>
   );
 }

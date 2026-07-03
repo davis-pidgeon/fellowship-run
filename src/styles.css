@@ -87,3 +87,24 @@ body { margin: 0; }
 .passport-nav button { background: #6b4a2b; color: #f0e2c0; border: none; border-radius: 6px;
   width: 40px; height: 34px; font-size: 16px; cursor: pointer; }
 .passport-nav span { font-family: Georgia, serif; color: #4a3a26; min-width: 48px; }
+
+/* Settings gear button (stacked above the backpack) */
+.gear-btn { position: absolute; right: 22px; bottom: 100px; z-index: 1000;
+  width: 58px; height: 58px; padding: 0; border: none; background: transparent;
+  cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); transition: transform 0.1s; }
+.gear-btn:hover { transform: translateY(-2px) rotate(20deg) scale(1.05); }
+.gear-btn img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff); }
+.settings-modal { position: relative; max-width: 560px; width: 90vw; }
+.character-card.current { box-shadow: 0 0 0 2px #fff; }
+
+/* Side-quest note — an aged letter, deliberately distinct from scene postcards */
+.quest-note { position: relative; max-width: 460px; width: 88vw; padding: 26px 24px 22px;
+  background: linear-gradient(#efe3c2, #e2d0a0); color: #3a2c14; border: 1px solid #b79b63;
+  border-radius: 3px; box-shadow: 0 0 0 6px #6b4a2b, 0 10px 30px rgba(0,0,0,0.55);
+  font-family: Georgia, serif; text-align: center; }
+.quest-seal { font-size: 26px; color: #7a1f1f; margin-bottom: 2px; }
+.quest-photo { width: 100%; max-height: 240px; object-fit: cover; image-rendering: pixelated;
+  border: 2px solid #6b4a2b; border-radius: 2px; margin-bottom: 12px; display: block; }
+.quest-title { margin: 4px 0 10px; color: #5a3d1a; letter-spacing: 0.5px; }
+.quest-story { line-height: 1.6; font-style: italic; white-space: pre-wrap; }
