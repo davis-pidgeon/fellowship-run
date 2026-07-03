@@ -7,9 +7,8 @@ export function Passport({ totalMiles }: { totalMiles: number }) {
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
 
-  const visited = ROUTE.filter(
-    (w) => w.isLandmark && w.cumulativeMiles > 0 && w.cumulativeMiles <= totalMiles
-  );
+  // Includes the Shire (mile 0) so the book always opens with your homeland.
+  const visited = ROUTE.filter((w) => w.isLandmark && w.cumulativeMiles <= totalMiles);
 
   const show = () => {
     setI(0);
