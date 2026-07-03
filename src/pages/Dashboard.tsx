@@ -5,6 +5,7 @@ import type { Milestone } from "../../shared/types";
 import { MapView, type MapFocus } from "../components/MapView";
 import { StatsPanel } from "../components/StatsPanel";
 import { CelebrationModal } from "../components/CelebrationModal";
+import { Passport } from "../components/Passport";
 
 export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: () => void }) {
   const [syncing, setSyncing] = useState(false);
@@ -36,6 +37,7 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
         onSelectMember={(id) => setFocus({ id, nonce: Date.now() })}
       />
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
+      <Passport totalMiles={me.user.totalMiles} />
     </div>
   );
 }
