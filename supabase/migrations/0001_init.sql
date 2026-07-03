@@ -44,3 +44,11 @@ create table milestone_awards (
 
 create index activities_user_idx on activities(user_id);
 create index users_fellowship_idx on users(fellowship_id);
+
+-- Row Level Security: lock all tables to the public anon/authenticated keys.
+-- The app accesses these tables ONLY server-side via the service_role key,
+-- which bypasses RLS. Enabling RLS with no policies denies all client access.
+alter table fellowship enable row level security;
+alter table users enable row level security;
+alter table activities enable row level security;
+alter table milestone_awards enable row level security;
