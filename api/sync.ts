@@ -144,10 +144,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  const badgeMap = new Map<string, (typeof result.crossed)[number]>();
+  for (const m of result.crossed) badgeMap.set(m.landmarkId, m);
+  for (const m of fellowshipCrossed) if (!badgeMap.has(m.landmarkId)) badgeMap.set(m.landmarkId, m);
+
   return res.status(200).json({
     importedCount: result.newActivities.length,
     totalMiles: result.newTotalMiles,
     fellowshipMiles,
-    newBadges: result.crossed,
+    newBadges: [...badgeMap.values()],
   });
 }

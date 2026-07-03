@@ -19,6 +19,7 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
     } catch (e) {
       if (e instanceof Error && e.message === "409") alert("Please reconnect Strava.");
       else if (e instanceof Error && e.message === "429") alert("Strava is busy — try again shortly.");
+      else alert("Sync failed — please try again shortly.");
     } finally {
       setSyncing(false);
     }

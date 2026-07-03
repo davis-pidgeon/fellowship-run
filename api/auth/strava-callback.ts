@@ -11,10 +11,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const inviteToken = req.query.state as string | undefined;
   if (!code) return res.redirect("/?error=oauth");
 
-  const { tokens, athlete } = await exchangeCode(code, {
-    clientId: getEnv("STRAVA_CLIENT_ID"),
-    clientSecret: getEnv("STRAVA_CLIENT_SECRET"),
-  });
+  let tokens: Awaited<ReturnType<typeof exchangeCode>>["tokens"];
+  let athlete: Awaited<ReturnType<typeof exchangeCode>>["athlete"];
+  try {
+    ({ tokens, athlete } = await exchangeCode(code, {
+      clientId: getEnv("STRAVA_CLIENT_ID"),
+      clientSecret: getEnv("STRAVA_CLIENT_SECRET"),
+    }));
+  } catch {
+    return res.redirect("/?error=oauth");
+  }
 
   const db = getServiceClient();
   const key = getEnv("TOKEN_ENCRYPTION_KEY");

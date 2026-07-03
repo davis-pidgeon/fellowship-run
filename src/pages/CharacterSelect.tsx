@@ -8,8 +8,14 @@ export default function CharacterSelect({ onChosen }: { onChosen: () => void }) 
 
   const choose = async (key: CharacterKey) => {
     setSaving(true);
-    await api.chooseCharacter(key);
-    onChosen();
+    try {
+      await api.chooseCharacter(key);
+      onChosen();
+    } catch {
+      alert("Could not save your character — please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
