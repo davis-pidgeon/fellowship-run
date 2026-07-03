@@ -1,3 +1,3 @@
 {
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/((?!api/|@|src/|node_modules/|.*\\.).*)", "destination": "/index.html" }]
 }
