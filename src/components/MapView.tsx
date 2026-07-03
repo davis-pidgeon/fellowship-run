@@ -1,5 +1,5 @@
 import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap } from "react-leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import type { Member } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
@@ -100,30 +100,33 @@ const fellowshipIcon = L.divIcon({
   iconAnchor: [15, 15],
 });
 
-// Cover the viewport, lock zoom-out and panning to the map, open at the Shire.
+// Cover-fit for a given viewport size: the zoom that fills the screen and the
+// center latitude that pins the map's TOP edge to the top of the viewport.
+function coverView(vw: number, vh: number): { center: [number, number]; zoom: number } {
+  const scale = Math.max(vw / WIDTH, vh / HEIGHT); // fill whichever dimension needs it
+  const zoom = Math.log2(scale);
+  const halfLat = vh / 2 / scale;
+  return { center: [HEIGHT - halfLat, WIDTH / 2], zoom };
+}
+
+// Re-pin on window resize only. The INITIAL view is set directly on the
+// MapContainer (below) so there is no post-mount view jump — which is what
+// desynced the marker layer from the map image on wide (desktop) screens.
 function FitCover() {
   const map = useMap();
   useEffect(() => {
-    // Deterministically cover the viewport (fill whichever dimension needs it)
-    // and place the center so the map's TOP edge sits at the top of the screen.
-    const pin = () => {
+    const onResize = () => {
       map.invalidateSize(false);
       const size = map.getSize();
       if (!size.x || !size.y) return;
-      const scale = Math.max(size.x / WIDTH, size.y / HEIGHT); // cover
-      const zoom = Math.log2(scale);
+      const { center, zoom } = coverView(size.x, size.y);
       map.setMinZoom(zoom);
       map.setMaxZoom(zoom + 4);
-      const halfLat = size.y / 2 / scale; // half the viewport height in map units
-      const centerLat = HEIGHT - halfLat; // top-aligned
-      map.setView([centerLat, WIDTH / 2], zoom, { animate: false });
+      map.setView(center, zoom, { animate: false });
     };
-    map.whenReady(pin);
-    const t = setTimeout(pin, 80); // re-pin once layout settles
-    map.on("resize", pin);
+    map.on("resize", onResize);
     return () => {
-      clearTimeout(t);
-      map.off("resize", pin);
+      map.off("resize", onResize);
     };
   }, [map]);
   return null;
@@ -169,11 +172,17 @@ export function MapView({
   const count = members.length;
   const fPos = positionForMiles(fellowshipMiles * t, ROUTE_WAYPOINTS);
 
+  // Compute the cover-fit view from the current window size BEFORE the map
+  // mounts, so the image and all markers share one consistent initial view.
+  const initial = useMemo(() => coverView(window.innerWidth, window.innerHeight), []);
+
   return (
     <MapContainer
       crs={L.CRS.Simple}
-      center={[HEIGHT / 2, WIDTH / 2]}
-      zoom={0}
+      center={initial.center}
+      zoom={initial.zoom}
+      minZoom={initial.zoom}
+      maxZoom={initial.zoom + 4}
       maxBounds={bounds}
       maxBoundsViscosity={1.0}
       zoomSnap={0}
