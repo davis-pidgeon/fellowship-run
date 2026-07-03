@@ -13,6 +13,7 @@ create table users (
   display_name text not null,
   avatar_url text,
   chosen_character text,
+  color text,
   fellowship_id uuid not null references fellowship(id) on delete cascade,
   strava_access_token text not null,
   strava_refresh_token text not null,

@@ -1,4 +1,4 @@
-.leaflet-container { background: #6b8f47; }
+.leaflet-container { background: #0c0c10; }
 .leaflet-image-layer { image-rendering: pixelated; }
 .runner-sprite { image-rendering: pixelated; filter: drop-shadow(0 0 1.5px #000) drop-shadow(0 2px 2px rgba(0,0,0,0.55)); }
 .fellowship-marker { font-size: 26px; line-height: 26px; text-align: center; filter: drop-shadow(0 0 2px #000); }
@@ -15,3 +15,27 @@
   display: flex; align-items: center; justify-content: center; z-index: 2000; }
 .pixel-frame { image-rendering: pixelated; background: #efe0bd; padding: 20px;
   border: 4px solid #6b4a2b; max-width: 480px; text-align: center; }
+
+/* Login / Join / Character-select pages */
+body { margin: 0; }
+.centered { min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  background: #14100a; color: #f0e2c0; font-family: Georgia, serif;
+  padding: 24px; text-align: center; }
+.centered h1 { color: #e8c96a; margin: 0 0 8px; }
+.subtitle { opacity: 0.8; margin: 14px 0 6px; letter-spacing: 0.5px; }
+.centered a.sync-btn { display: inline-block; width: auto; padding: 10px 22px;
+  text-decoration: none; }
+
+.color-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.color-swatch { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #4a3a26;
+  cursor: pointer; padding: 0; }
+.color-swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px #000, 0 0 8px currentColor; }
+
+.character-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+  max-width: 620px; margin-top: 8px; }
+.character-card { display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 100px; padding: 10px 6px; background: rgba(30,22,14,0.85); color: #f0e2c0;
+  border: 2px solid #8a6b42; border-radius: 8px; cursor: pointer; font-family: Georgia, serif; }
+.character-card:disabled { opacity: 0.5; cursor: default; }
+.character-card .runner-sprite { image-rendering: pixelated; object-fit: contain; }

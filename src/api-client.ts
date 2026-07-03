@@ -4,10 +4,11 @@ export interface Member {
   id: string;
   displayName: string;
   chosenCharacter: CharacterKey | null;
+  color: string | null;
   totalMiles: number;
 }
 export interface MeResponse {
-  user: { id: string; displayName: string; avatarUrl: string | null; chosenCharacter: CharacterKey | null; totalMiles: number };
+  user: { id: string; displayName: string; avatarUrl: string | null; chosenCharacter: CharacterKey | null; color: string | null; totalMiles: number };
   fellowship: { id: string; name: string };
   members: Member[];
   fellowshipMiles: number;
@@ -39,11 +40,11 @@ export function stravaAuthUrl(inviteToken?: string): string {
 export const api = {
   me: () => fetch("/api/me", { credentials: "include" }).then((r) => (r.status === 401 ? null : json<MeResponse>(r))),
   sync: () => fetch("/api/sync", { method: "POST", credentials: "include" }).then(json<SyncResponse>),
-  chooseCharacter: (character: CharacterKey) =>
+  chooseCharacter: (character: CharacterKey, color: string) =>
     fetch("/api/character", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ character }),
+      body: JSON.stringify({ character, color }),
     }).then(json<{ ok: true }>),
   createFellowship: (name: string) =>
     fetch("/api/invite", {

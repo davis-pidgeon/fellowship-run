@@ -4,11 +4,11 @@ import { StatsPanel, nextLandmark } from "./StatsPanel";
 import type { MeResponse } from "../api-client";
 
 const me: MeResponse = {
-  user: { id: "u1", displayName: "Davis", avatarUrl: null, chosenCharacter: "aragorn", totalMiles: 458 },
+  user: { id: "u1", displayName: "Davis", avatarUrl: null, chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458 },
   fellowship: { id: "f1", name: "The Fellowship" },
   members: [
-    { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", totalMiles: 458 },
-    { id: "u2", displayName: "Sam", chosenCharacter: "frodo", totalMiles: 200 },
+    { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458 },
+    { id: "u2", displayName: "Sam", chosenCharacter: "frodo", color: "#1e88e5", totalMiles: 200 },
   ],
   fellowshipMiles: 658,
 };
