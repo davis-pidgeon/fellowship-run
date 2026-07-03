@@ -175,6 +175,20 @@ function FocusFlyer({ members, focus }: { members: Member[]; focus: MapFocus | n
   return null;
 }
 
+// During the intro, follow the runner with lead space: keep them slightly
+// above screen-center so more of the road ahead (toward Mount Doom) is visible.
+function CameraFollow({ targetMiles, following }: { targetMiles: number; following: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!following) return;
+    const p = positionForMiles(targetMiles, ROUTE_WAYPOINTS);
+    const scale = Math.pow(2, map.getZoom());
+    const leadLat = 0.16 * (map.getSize().y / scale); // ~16% of the viewport ahead
+    map.panTo([latFor(p.y) - leadLat, p.x], { animate: false });
+  }, [targetMiles, following, map]);
+  return null;
+}
+
 function NavWatcher({ onNavigate }: { onNavigate: () => void }) {
   useMapEvents({
     dragstart: () => onNavigate(),
@@ -200,6 +214,7 @@ export function MapView({
 }) {
   // Intro animation: everyone starts at mile 0 and eases out to their position.
   const [t, setT] = useState(0);
+  const [following, setFollowing] = useState(true);
   useEffect(() => {
     let raf = 0;
     let start = 0;
@@ -208,6 +223,7 @@ export function MapView({
       const e = Math.min(1, (now - start) / ANIM_MS);
       setT(easeInOutCubic(e));
       if (e < 1) raf = requestAnimationFrame(tick);
+      else setFollowing(false); // intro done — stop following, let the user drive
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -234,6 +250,7 @@ export function MapView({
     >
       <FitCover />
       <NavWatcher onNavigate={onNavigate} />
+      <CameraFollow targetMiles={myMiles * t} following={following} />
       <FocusFlyer members={members} focus={focus} />
       <ImageOverlay url={mapUrl} bounds={bounds} zIndex={0} />
 

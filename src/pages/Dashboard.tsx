@@ -15,7 +15,7 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
   const [badges, setBadges] = useState<Milestone[]>([]);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [quest, setQuest] = useState<SideQuest | null>(null);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(true);
 
   const onSync = async () => {
     setSyncing(true);
