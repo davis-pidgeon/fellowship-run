@@ -105,18 +105,21 @@ function FitCover() {
   const map = useMap();
   useEffect(() => {
     const b = L.latLngBounds([[0, 0], [HEIGHT, WIDTH]]);
-    const apply = () => {
+    // Cover the viewport and pin to the top edge (the Shire). maxBounds clamps
+    // the center so the viewport's top aligns with the map's top.
+    const pin = () => {
+      map.invalidateSize(false);
       const cover = map.getBoundsZoom(b, true);
       map.setMinZoom(cover);
-      if (map.getZoom() < cover) map.setZoom(cover);
+      map.setView([HEIGHT, WIDTH / 2], cover, { animate: false });
     };
-    apply();
-    // Open pinned to the very top edge of the map (the Shire). maxBounds clamps
-    // the center so the viewport's top aligns with the map's top.
-    map.setView([HEIGHT, WIDTH / 2], map.getMinZoom(), { animate: false });
-    map.on("resize", apply);
+    map.whenReady(pin);
+    // Re-pin once the container's real size has settled (initial layout).
+    const t = setTimeout(pin, 80);
+    map.on("resize", pin);
     return () => {
-      map.off("resize", apply);
+      clearTimeout(t);
+      map.off("resize", pin);
     };
   }, [map]);
   return null;
