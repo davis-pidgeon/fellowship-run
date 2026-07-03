@@ -16,6 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { data: fellowship } = await db
     .from("fellowship").select("id, name").eq("id", user.fellowship_id).single();
 
+  if (!fellowship) return res.status(500).json({ error: "fellowship not found" });
+
   const { data: members } = await db
     .from("users")
     .select("id, display_name, chosen_character, total_miles")
@@ -32,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: user.id, displayName: user.display_name, avatarUrl: user.avatar_url,
       chosenCharacter: user.chosen_character, totalMiles: user.total_miles,
     },
-    fellowship: { id: fellowship!.id, name: fellowship!.name },
+    fellowship: { id: fellowship.id, name: fellowship.name },
     members: memberList,
     fellowshipMiles,
   });
