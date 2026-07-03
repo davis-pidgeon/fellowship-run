@@ -46,10 +46,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // Fetch runs since last sync
-  const afterEpoch = user.last_sync_at
+  // Fetch runs since last sync, but never earlier than the journey start date.
+  // JOURNEY_START_DATE (ISO, e.g. "2026-07-01") floors the import so old runs
+  // from long before the quest began are never counted.
+  const journeyStart = process.env.JOURNEY_START_DATE
+    ? Math.floor(new Date(process.env.JOURNEY_START_DATE).getTime() / 1000)
+    : 0;
+  const lastSync = user.last_sync_at
     ? Math.floor(new Date(user.last_sync_at).getTime() / 1000)
     : 0;
+  const afterEpoch = Math.max(lastSync, journeyStart);
   let fetched;
   try {
     fetched = await fetchRunsSince(accessToken, afterEpoch);

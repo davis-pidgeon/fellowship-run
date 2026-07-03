@@ -15,10 +15,16 @@ function spriteFor(character: string | null): string {
 }
 
 function spriteIcon(url: string) {
-  return L.icon({ iconUrl: url, iconSize: [24, 24], className: "runner-sprite", iconAnchor: [12, 12] });
+  return L.icon({
+    iconUrl: url,
+    iconSize: [34, 51],
+    iconAnchor: [17, 51],
+    popupAnchor: [0, -48],
+    className: "runner-sprite",
+  });
 }
 
-const fellowshipIcon = L.divIcon({ html: "⭐", className: "fellowship-marker", iconSize: [24, 24] });
+const fellowshipIcon = L.divIcon({ html: "⭐", className: "fellowship-marker", iconSize: [30, 30], iconAnchor: [15, 15] });
 
 export function MapView({ members, fellowshipMiles }: { members: Member[]; fellowshipMiles: number }) {
   const fellowshipPos = positionForMiles(fellowshipMiles, ROUTE_WAYPOINTS);
