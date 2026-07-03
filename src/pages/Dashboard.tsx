@@ -2,13 +2,14 @@ import { useState } from "react";
 import type { MeResponse } from "../api-client";
 import { api } from "../api-client";
 import type { Milestone } from "../../shared/types";
-import { MapView } from "../components/MapView";
+import { MapView, type MapFocus } from "../components/MapView";
 import { StatsPanel } from "../components/StatsPanel";
 import { CelebrationModal } from "../components/CelebrationModal";
 
 export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: () => void }) {
   const [syncing, setSyncing] = useState(false);
   const [badges, setBadges] = useState<Milestone[]>([]);
+  const [focus, setFocus] = useState<MapFocus | null>(null);
 
   const onSync = async () => {
     setSyncing(true);
@@ -27,8 +28,13 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
 
   return (
     <div className="dashboard">
-      <MapView members={me.members} fellowshipMiles={me.fellowshipMiles} />
-      <StatsPanel me={me} onSync={onSync} syncing={syncing} />
+      <MapView members={me.members} fellowshipMiles={me.fellowshipMiles} focus={focus} />
+      <StatsPanel
+        me={me}
+        onSync={onSync}
+        syncing={syncing}
+        onSelectMember={(id) => setFocus({ id, nonce: Date.now() })}
+      />
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
     </div>
   );

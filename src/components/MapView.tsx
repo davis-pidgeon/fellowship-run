@@ -1,5 +1,5 @@
-import { MapContainer, ImageOverlay, Marker, Popup, useMap } from "react-leaflet";
-import { useEffect } from "react";
+import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { useEffect, useState } from "react";
 import L from "leaflet";
 import type { Member } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
@@ -10,28 +10,46 @@ import mapUrl from "../assets/map.png";
 const HEIGHT = 1672;
 const WIDTH = 941;
 const bounds: L.LatLngBoundsExpression = [[0, 0], [HEIGHT, WIDTH]];
-
-// Character size in MAP units, so sprites scale WITH the map when zooming.
 const CHAR_W = 46;
 const CHAR_H = 69; // 2:3, matches the 1024x1536 sprite art
+const ANIM_MS = 2600;
+
+export interface MapFocus {
+  id: string;
+  nonce: number;
+}
 
 function spriteFor(character: string | null): string {
   return CHARACTERS.find((c) => c.key === character)?.sprite ?? "/sprites/frodo.png";
 }
 
-// Leaflet CRS.Simple counts latitude UPWARD; image pixels count y DOWNWARD.
-// Convert an image-pixel y to the matching map latitude so markers land on
-// the correct spot (Shire at the top, Mount Doom at the bottom).
+// CRS.Simple counts latitude UPWARD; image pixels count y DOWNWARD.
 function latFor(imgY: number): number {
   return HEIGHT - imgY;
 }
 
-function RunnerOverlay({ member }: { member: Member }) {
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+// The route from the start up to `miles`, as lat/lng points, nudged sideways by
+// offsetX so each runner's trail reads as its own parallel ribbon.
+function trailPoints(miles: number, offsetX: number): L.LatLngExpression[] {
+  const pts: L.LatLngExpression[] = [];
+  for (const w of ROUTE_WAYPOINTS) {
+    if (w.cumulativeMiles <= miles) pts.push([latFor(w.y), w.x + offsetX]);
+    else break;
+  }
+  const p = positionForMiles(miles, ROUTE_WAYPOINTS);
+  pts.push([latFor(p.y), p.x + offsetX]);
+  return pts;
+}
+
+function RunnerOverlay({ member, miles }: { member: Member; miles: number }) {
   const map = useMap();
-  const p = positionForMiles(member.totalMiles, ROUTE_WAYPOINTS);
+  const p = positionForMiles(miles, ROUTE_WAYPOINTS);
   const lat = latFor(p.y);
   const lng = p.x;
-  // Feet at the route point, standing upright (head toward higher latitude).
   const overlayBounds: L.LatLngBoundsExpression = [
     [lat, lng - CHAR_W / 2],
     [lat + CHAR_H, lng + CHAR_W / 2],
@@ -64,6 +82,17 @@ function RunnerOverlay({ member }: { member: Member }) {
   );
 }
 
+const LANDMARKS = ROUTE_WAYPOINTS.filter((w) => w.isLandmark);
+
+function labelIcon(name: string) {
+  return L.divIcon({
+    className: "landmark-label",
+    html: `<span>${name}</span>`,
+    iconSize: [140, 0],
+    iconAnchor: [70, -8],
+  });
+}
+
 const fellowshipIcon = L.divIcon({
   html: "⭐",
   className: "fellowship-marker",
@@ -71,19 +100,17 @@ const fellowshipIcon = L.divIcon({
   iconAnchor: [15, 15],
 });
 
-// Lock the view to the map: cover the whole screen (no empty margins), never
-// zoom out past that, and never pan off the map. Re-applies on window resize.
+// Cover the viewport, lock zoom-out and panning to the map, open at the Shire.
 function FitCover() {
   const map = useMap();
   useEffect(() => {
     const b = L.latLngBounds([[0, 0], [HEIGHT, WIDTH]]);
     const apply = () => {
-      const cover = map.getBoundsZoom(b, true); // inside=true => cover the viewport
+      const cover = map.getBoundsZoom(b, true);
       map.setMinZoom(cover);
       if (map.getZoom() < cover) map.setZoom(cover);
     };
     apply();
-    // Begin the journey at the Shire (top of the map).
     map.setView([latFor(130), 465], Math.max(map.getZoom(), map.getMinZoom()));
     map.on("resize", apply);
     return () => {
@@ -93,8 +120,46 @@ function FitCover() {
   return null;
 }
 
-export function MapView({ members, fellowshipMiles }: { members: Member[]; fellowshipMiles: number }) {
-  const fPos = positionForMiles(fellowshipMiles, ROUTE_WAYPOINTS);
+function FocusFlyer({ members, focus }: { members: Member[]; focus: MapFocus | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!focus) return;
+    const m = members.find((x) => x.id === focus.id);
+    if (!m) return;
+    const p = positionForMiles(m.totalMiles, ROUTE_WAYPOINTS);
+    map.flyTo([latFor(p.y), p.x], Math.max(map.getZoom(), map.getMinZoom() + 1.6), { duration: 0.8 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.nonce]);
+  return null;
+}
+
+export function MapView({
+  members,
+  fellowshipMiles,
+  focus,
+}: {
+  members: Member[];
+  fellowshipMiles: number;
+  focus: MapFocus | null;
+}) {
+  // Intro animation: everyone starts at mile 0 and eases out to their position.
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    let start = 0;
+    const tick = (now: number) => {
+      if (!start) start = now;
+      const e = Math.min(1, (now - start) / ANIM_MS);
+      setT(easeOutCubic(e));
+      if (e < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const count = members.length;
+  const fPos = positionForMiles(fellowshipMiles * t, ROUTE_WAYPOINTS);
+
   return (
     <MapContainer
       crs={L.CRS.Simple}
@@ -106,10 +171,35 @@ export function MapView({ members, fellowshipMiles }: { members: Member[]; fello
       style={{ height: "100vh", width: "100vw", background: "#000" }}
     >
       <FitCover />
+      <FocusFlyer members={members} focus={focus} />
       <ImageOverlay url={mapUrl} bounds={bounds} zIndex={0} />
-      {members.map((m) => (
-        <RunnerOverlay key={m.id} member={m} />
+
+      {members.map((m, i) => {
+        const offsetX = (i - (count - 1) / 2) * 8;
+        const color = m.color ?? DEFAULT_COLOR;
+        return (
+          <Polyline
+            key={`trail-${m.id}`}
+            positions={trailPoints(m.totalMiles * t, offsetX)}
+            pathOptions={{ color, weight: 3, opacity: 0.55, lineCap: "round", lineJoin: "round" }}
+          />
+        );
+      })}
+
+      {LANDMARKS.map((w) => (
+        <Marker
+          key={`label-${w.landmarkId}`}
+          position={[latFor(w.y), w.x]}
+          icon={labelIcon(w.name)}
+          interactive={false}
+          zIndexOffset={-100}
+        />
       ))}
+
+      {members.map((m) => (
+        <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} />
+      ))}
+
       <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon}>
         <Popup>The Fellowship — {Math.round(fellowshipMiles)} mi</Popup>
       </Marker>

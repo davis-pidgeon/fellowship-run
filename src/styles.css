@@ -39,3 +39,21 @@ body { margin: 0; }
   border: 2px solid #8a6b42; border-radius: 8px; cursor: pointer; font-family: Georgia, serif; }
 .character-card:disabled { opacity: 0.5; cursor: default; }
 .character-card .runner-sprite { image-rendering: pixelated; object-fit: contain; }
+
+/* Map landmark labels */
+.landmark-label { pointer-events: none; }
+.landmark-label span { display: inline-block; white-space: nowrap; transform: translateX(-50%);
+  font-family: Georgia, serif; font-size: 12px; font-weight: bold; color: #f6ecc9;
+  text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 2px #000; letter-spacing: 0.5px; }
+
+/* Stats panel: active lens, clickable leaderboard */
+.headline .hl { opacity: 0.65; }
+.headline .hl.active { opacity: 1; }
+.headline .hl.active strong { text-decoration: underline; text-underline-offset: 3px; }
+.leaderboard { list-style: none; padding: 0; margin: 10px 0 0; }
+.leader-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 4px;
+  cursor: pointer; font-size: 13px; }
+.leader-row:hover { background: rgba(255,255,255,0.08); }
+.leader-row.you { background: rgba(192,57,43,0.28); }
+.leader-row .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto;
+  border: 1px solid rgba(0,0,0,0.5); }

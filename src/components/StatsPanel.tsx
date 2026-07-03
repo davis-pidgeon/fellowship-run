@@ -10,13 +10,18 @@ export function nextLandmark(miles: number): { name: string; milesAway: number }
   return { name: ahead.name, milesAway: Math.round((ahead.cumulativeMiles - miles) * 10) / 10 };
 }
 
-export function StatsPanel({ me, onSync, syncing }: {
-  me: MeResponse; onSync: () => void; syncing: boolean;
+export function StatsPanel({ me, onSync, syncing, onSelectMember }: {
+  me: MeResponse;
+  onSync: () => void;
+  syncing: boolean;
+  onSelectMember: (id: string) => void;
 }) {
   const [lens, setLens] = useState<"me" | "fellowship">("me");
   const personalPct = percentComplete(me.user.totalMiles, ROUTE);
   const fellowshipPct = percentComplete(me.fellowshipMiles, ROUTE);
+
   const lensMiles = lens === "me" ? me.user.totalMiles : me.fellowshipMiles;
+  const lensPct = lens === "me" ? personalPct : fellowshipPct;
   const next = nextLandmark(lensMiles);
   const leaders = [...me.members].sort((a, b) => b.totalMiles - a.totalMiles);
   const medals = ["🥇", "🥈", "🥉"];
@@ -24,27 +29,41 @@ export function StatsPanel({ me, onSync, syncing }: {
   return (
     <div className="stats-panel">
       <div className="headline">
-        <div><span className="label">You</span><strong>{personalPct.toFixed(1)}%</strong></div>
-        <div><span className="label">Fellowship</span><strong>{fellowshipPct.toFixed(1)}%</strong></div>
-      </div>
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${fellowshipPct}%` }} />
-      </div>
-      <div className="mileage">
-        {Math.round(me.fellowshipMiles)} / {TOTAL_MILES} mi to Mount Doom
+        <div className={lens === "me" ? "hl active" : "hl"}>
+          <span className="label">You</span><strong>{personalPct.toFixed(1)}%</strong>
+        </div>
+        <div className={lens === "fellowship" ? "hl active" : "hl"}>
+          <span className="label">Fellowship</span><strong>{fellowshipPct.toFixed(1)}%</strong>
+        </div>
       </div>
 
       <div className="lens-toggle">
         <button aria-pressed={lens === "me"} onClick={() => setLens("me")}>Me</button>
         <button aria-pressed={lens === "fellowship"} onClick={() => setLens("fellowship")}>Fellowship</button>
       </div>
+
+      <div className="progress-bar">
+        <div className="progress-fill" style={{ width: `${lensPct}%` }} />
+      </div>
+      <div className="mileage">
+        {lens === "me" ? "You: " : "Fellowship: "}
+        {Math.round(lensMiles)} / {TOTAL_MILES} mi to Mount Doom
+      </div>
+
       <div data-testid="next-landmark" className="next-landmark">
         {next ? `🏅 Next: ${next.name} in ${next.milesAway} mi` : "🏔️ Mount Doom reached!"}
       </div>
 
       <ul className="leaderboard">
         {leaders.map((m, i) => (
-          <li key={m.id} data-testid="leader-row">
+          <li
+            key={m.id}
+            data-testid="leader-row"
+            className={"leader-row" + (m.id === me.user.id ? " you" : "")}
+            onClick={() => onSelectMember(m.id)}
+            title="Show on map"
+          >
+            <span className="dot" style={{ background: m.color ?? "#fdd835" }} />
             {medals[i] ?? "•"} {m.displayName} — {Math.round(m.totalMiles)} mi
           </li>
         ))}
