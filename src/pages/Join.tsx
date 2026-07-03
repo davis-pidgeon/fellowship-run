@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, stravaAuthUrl } from "../api-client";
+import { LoadingRing } from "../components/LoadingRing";
 
 export default function Join() {
   const token = new URLSearchParams(window.location.search).get("token") ?? "";
@@ -10,7 +11,7 @@ export default function Join() {
     api.checkInvite(token).then((r) => setState({ valid: r.valid, name: r.fellowshipName }));
   }, [token]);
 
-  if (!state) return <div className="centered">Loading…</div>;
+  if (!state) return <LoadingRing label="Checking your invite…" />;
   if (!state.valid) return <div className="centered"><h1>Invalid invite</h1><p>Ask your friend for a fresh link.</p></div>;
 
   return (

@@ -57,3 +57,14 @@ body { margin: 0; }
 .leader-row.you { background: rgba(192,57,43,0.28); }
 .leader-row .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto;
   border: 1px solid rgba(0,0,0,0.5); }
+
+/* Pixel-art spinning ring loader */
+.pixel-ring { position: relative; width: 90px; height: 90px; image-rendering: pixelated; }
+.pixel-ring span { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+  margin: -5px 0 0 -5px; background: #e8c96a; box-shadow: 0 0 0 1px #6b4a2b;
+  animation: pixel-ring-spin 1.2s steps(1, end) infinite; }
+@keyframes pixel-ring-spin {
+  0%   { opacity: 1;   background: #fff3c4; box-shadow: 0 0 0 1px #6b4a2b, 0 0 6px #ffd54f; }
+  12%  { opacity: 0.85; background: #e8c96a; box-shadow: 0 0 0 1px #6b4a2b; }
+  40%, 100% { opacity: 0.18; background: #8a6b42; box-shadow: 0 0 0 1px #4a3a26; }
+}

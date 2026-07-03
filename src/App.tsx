@@ -4,10 +4,11 @@ import Login from "./pages/Login";
 import Join from "./pages/Join";
 import CharacterSelect from "./pages/CharacterSelect";
 import Dashboard from "./pages/Dashboard";
+import { LoadingRing } from "./components/LoadingRing";
 
 function Home() {
   const { data, loading, refresh } = useSession();
-  if (loading) return <div className="centered">Loading…</div>;
+  if (loading) return <LoadingRing label="Summoning the Fellowship…" />;
   if (!data) return <Navigate to="/login" replace />;
   if (!data.user.chosenCharacter) return <CharacterSelect onChosen={refresh} />;
   return <Dashboard me={data} refresh={refresh} />;
