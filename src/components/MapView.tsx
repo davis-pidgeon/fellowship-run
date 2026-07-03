@@ -111,7 +111,9 @@ function FitCover() {
       if (map.getZoom() < cover) map.setZoom(cover);
     };
     apply();
-    map.setView([latFor(130), 465], Math.max(map.getZoom(), map.getMinZoom()));
+    // Open pinned to the very top edge of the map (the Shire). maxBounds clamps
+    // the center so the viewport's top aligns with the map's top.
+    map.setView([HEIGHT, WIDTH / 2], map.getMinZoom(), { animate: false });
     map.on("resize", apply);
     return () => {
       map.off("resize", apply);
