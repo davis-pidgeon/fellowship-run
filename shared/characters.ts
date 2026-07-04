@@ -14,6 +14,8 @@ export const CHARACTERS: CharacterDef[] = [
   { key: "gimli", name: "Gimli (Dwarf)", sprite: "/sprites/gimli.png" },
   { key: "gandalf", name: "Gandalf (Wizard)", sprite: "/sprites/gandalf.png" },
   { key: "boromir", name: "Boromir (Warrior)", sprite: "/sprites/boromir.png" },
+  { key: "merry", name: "Merry (Hobbit)", sprite: "/sprites/merry.png" },
+  { key: "pippin", name: "Pippin (Hobbit)", sprite: "/sprites/pippin.png" },
 ];
 
 export interface MarkerColor {

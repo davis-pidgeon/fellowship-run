@@ -1,5 +1,6 @@
 export type CharacterKey =
-  | "frodo" | "sam" | "aragorn" | "legolas" | "gimli" | "gandalf" | "boromir";
+  | "frodo" | "sam" | "aragorn" | "legolas" | "gimli" | "gandalf" | "boromir"
+  | "merry" | "pippin";
 
 export interface Waypoint {
   name: string;
