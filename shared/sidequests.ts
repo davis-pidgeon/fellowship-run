@@ -3,8 +3,8 @@
 //
 // TO ADD A REAL ONE: append an entry below with
 //   - revealMiles: the mileage at which it appears
-//   - x, y:        pixel position on the map image (941 x 1672). Put it OFF the
-//                  trail in open space (trail sits around x 400-640).
+//   - x, y:        pixel position on the map image (1448 x 1086). Put it OFF the
+//                  drawn trail, in open land/sea.
 //   - title, story: the note shown when clicked
 //   - photo:       OPTIONAL image path, e.g. "/quests/my-photo.png"
 export interface SideQuest {
@@ -22,8 +22,8 @@ export const SIDE_QUESTS: SideQuest[] = [
   {
     id: "first-step",
     revealMiles: 1,
-    x: 680,
-    y: 125,
+    x: 300,
+    y: 470,
     title: "The First Step",
     story:
       "A worn signpost at the edge of the village points toward the wide world beyond. Someone has tucked a spare handkerchief and a note behind it: 'You're off, then! Mind your feet, and don't forget to look back now and again.'",
@@ -31,8 +31,8 @@ export const SIDE_QUESTS: SideQuest[] = [
   {
     id: "milestone-cake",
     revealMiles: 5,
-    x: 180,
-    y: 210,
+    x: 470,
+    y: 430,
     title: "A Crumb on the Milestone",
     story:
       "A weathered milestone leans by the roadside. Someone has left half a seed-cake and a scrawled note: 'Second breakfast — highly recommended for the road ahead.'",
@@ -40,8 +40,8 @@ export const SIDE_QUESTS: SideQuest[] = [
   {
     id: "sealed-letter",
     revealMiles: 27,
-    x: 760,
-    y: 175,
+    x: 615,
+    y: 150,
     title: "A Sealed Letter",
     story:
       "An envelope pinned beneath a stone, its red wax cracked with age. The ink has faded, but a single line remains legible: 'Keep to the path, and mind the marshes after dark.'",
@@ -49,8 +49,8 @@ export const SIDE_QUESTS: SideQuest[] = [
   {
     id: "old-signpost",
     revealMiles: 100,
-    x: 165,
-    y: 300,
+    x: 760,
+    y: 470,
     title: "The Crooked Signpost",
     story:
       "A signpost with too many arms points in every direction at once. Every arrow has been turned to face the way you came — a traveler's small joke, or a warning.",
@@ -58,8 +58,8 @@ export const SIDE_QUESTS: SideQuest[] = [
   {
     id: "campfire-song",
     revealMiles: 300,
-    x: 785,
-    y: 540,
+    x: 1080,
+    y: 645,
     title: "Embers of a Campfire",
     story:
       "The ashes are still warm. Whoever rested here scratched a tune's worth of tally-marks into a log and left a boot-print pointing onward. They were in good spirits, and in a hurry.",
@@ -67,8 +67,8 @@ export const SIDE_QUESTS: SideQuest[] = [
   {
     id: "watchers-stone",
     revealMiles: 600,
-    x: 175,
-    y: 800,
+    x: 1340,
+    y: 470,
     title: "The Watcher's Stone",
     story:
       "A tall stone stands alone, carved with a single open eye worn nearly smooth. Birds refuse to land on it. You feel, briefly, that the road behind you is being counted.",
