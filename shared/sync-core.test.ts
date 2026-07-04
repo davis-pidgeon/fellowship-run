@@ -51,4 +51,20 @@ describe("computeSync", () => {
     expect(res.crossed).toEqual([]);
     expect(res.newTotalMiles).toBe(6);
   });
+  // Guarantees the sync fix is safe: the handler now refetches the whole journey
+  // window every time (never gating on last_sync_at), so a run stranded by the
+  // last_sync blind spot is picked up on the next sync while the already-imported
+  // run is de-duped and never double-counted.
+  it("backfills a previously-missed run without double-counting on a full-window refetch", () => {
+    const alreadyImported = run(101, 4.08); // e.g. the 07-02 run already in the DB
+    const missedRun = run(102, 3.22); // e.g. the 07-04 run stranded by the blind spot
+    const res = computeSync({
+      fetched: [alreadyImported, missedRun], // full window refetch returns both
+      existingActivityIds: [101],
+      previousTotalMiles: 4.08,
+      route,
+    });
+    expect(res.newActivities.map((a) => a.stravaActivityId)).toEqual([102]);
+    expect(res.newTotalMiles).toBeCloseTo(7.3, 5);
+  });
 });
