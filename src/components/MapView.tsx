@@ -13,10 +13,17 @@ const WIDTH = 1448;
 const bounds: L.LatLngBoundsExpression = [[0, 0], [HEIGHT, WIDTH]];
 const CHAR_W = 46;
 const CHAR_H = 69; // 2:3, matches the sprite art
+// The sprite art has ~36% empty space below the character's feet; drop the box
+// by that fraction so the feet (not the transparent box bottom) sit on the path.
+const FOOT_FRAC = 0.36;
 const QUEST_W = 50;
 const QUEST_H = 28; // envelope aspect
 const ANIM_MS = 4500;
 const ZOOM_IN = 0.8; // zoom in past "cover" so the follow view feels close
+// Sideways nudge per runner so trails read as parallel ribbons AND clustered
+// characters fan out enough to tell apart — each character shares its trail's
+// offset so the trail runs straight up into the character's feet.
+const STAGGER = 11;
 
 export interface MapFocus {
   id: string;
@@ -54,14 +61,15 @@ function trailPoints(miles: number, offsetX: number): L.LatLngExpression[] {
   return pts;
 }
 
-function RunnerOverlay({ member, miles }: { member: Member; miles: number }) {
+function RunnerOverlay({ member, miles, offsetX }: { member: Member; miles: number; offsetX: number }) {
   const map = useMap();
   const p = positionForMiles(miles, ROUTE_WAYPOINTS);
   const lat = latFor(p.y);
-  const lng = p.x;
+  const lng = p.x + offsetX;
+  const footLat = lat - FOOT_FRAC * CHAR_H; // feet land on the path, not the box
   const overlayBounds: L.LatLngBoundsExpression = [
-    [lat, lng - CHAR_W / 2],
-    [lat + CHAR_H, lng + CHAR_W / 2],
+    [footLat, lng - CHAR_W / 2],
+    [footLat + CHAR_H, lng + CHAR_W / 2],
   ];
   const color = member.color ?? DEFAULT_COLOR;
   return (
@@ -118,11 +126,11 @@ function QuestOverlay({ quest, onOpen }: { quest: SideQuest; onOpen: (q: SideQue
   );
 }
 
-const fellowshipIcon = L.divIcon({
-  html: "⭐",
-  className: "fellowship-marker",
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
+const fellowshipIcon = L.icon({
+  iconUrl: "/ring.png",
+  iconSize: [56, 56],
+  iconAnchor: [28, 28],
+  className: "fellowship-ring",
 });
 
 // Keep the min zoom at "cover" on resize so the map never shows empty margins.
@@ -236,7 +244,7 @@ export function MapView({
       <ImageOverlay url={mapUrl} bounds={bounds} zIndex={0} />
 
       {members.map((m, i) => {
-        const offsetX = (i - (count - 1) / 2) * 8;
+        const offsetX = (i - (count - 1) / 2) * STAGGER;
         const color = m.color ?? DEFAULT_COLOR;
         return (
           <Polyline
@@ -247,8 +255,8 @@ export function MapView({
         );
       })}
 
-      {members.map((m) => (
-        <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} />
+      {members.map((m, i) => (
+        <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} />
       ))}
 
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles).map((q) => (

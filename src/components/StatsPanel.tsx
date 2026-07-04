@@ -85,6 +85,18 @@ export function StatsPanel({
         <div className="progress-fill" style={{ width: `${lensPct}%`, background: fillColor }} />
       </div>
 
+      {/* Kept outside panel-details so it stays visible when the panel is collapsed. */}
+      <button
+        className="sync-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSync();
+        }}
+        disabled={syncing}
+      >
+        {syncing ? "Syncing…" : "⟳ Sync Strava"}
+      </button>
+
       <div className="panel-details">
         <div className="lens-toggle">
           <button aria-pressed={lens === "me"} onClick={() => setLens("me")}>Me</button>
@@ -114,10 +126,6 @@ export function StatsPanel({
             </li>
           ))}
         </ul>
-
-        <button className="sync-btn" onClick={onSync} disabled={syncing}>
-          {syncing ? "Syncing…" : "⟳ Sync Strava"}
-        </button>
       </div>
     </div>
   );
