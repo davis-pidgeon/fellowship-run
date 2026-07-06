@@ -5,7 +5,7 @@ import type { Member } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
 import { ROUTE as ROUTE_WAYPOINTS } from "../../shared/route";
 import { CHARACTERS, DEFAULT_COLOR } from "../../shared/characters";
-import { SIDE_QUESTS, type SideQuest } from "../../shared/sidequests";
+import { SIDE_QUESTS, ARCS, type SideQuest } from "../../shared/sidequests";
 import mapUrl from "../assets/map.png";
 
 const HEIGHT = 1086;
@@ -115,8 +115,10 @@ function QuestOverlay({ quest, onOpen }: { quest: SideQuest; onOpen: (q: SideQue
         add: (e) => {
           const el = (e.target as L.ImageOverlay).getElement();
           if (el) {
+            const glow = ARCS[quest.arc]?.color ?? "#ffffff";
             el.style.imageRendering = "pixelated";
-            el.style.filter = "drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff)";
+            el.style.filter =
+              `drop-shadow(0 0 2px ${glow}) drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 5px ${glow})`;
             el.style.cursor = "pointer";
           }
         },
@@ -190,6 +192,7 @@ export function MapView({
   myMiles,
   onOpenQuest,
   onNavigate,
+  openedQuestIds,
 }: {
   members: Member[];
   fellowshipMiles: number;
@@ -197,6 +200,7 @@ export function MapView({
   myMiles: number;
   onOpenQuest: (q: SideQuest) => void;
   onNavigate: () => void;
+  openedQuestIds: string[];
 }) {
   const [t, setT] = useState(0);
   const [following, setFollowing] = useState(true);
@@ -259,7 +263,7 @@ export function MapView({
         <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} />
       ))}
 
-      {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles).map((q) => (
+      {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />
       ))}
 

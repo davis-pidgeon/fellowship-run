@@ -11,6 +11,7 @@ const me: MeResponse = {
     { id: "u2", displayName: "Sam", chosenCharacter: "frodo", color: "#1e88e5", totalMiles: 200 },
   ],
   fellowshipMiles: 658,
+  openedQuests: [],
 };
 
 describe("nextLandmark", () => {

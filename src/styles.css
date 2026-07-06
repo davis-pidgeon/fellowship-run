@@ -94,12 +94,28 @@ body { margin: 0; }
 .passport { position: relative; max-width: 560px; width: 90vw; }
 .passport-close { position: absolute; top: 8px; right: 10px; background: transparent;
   border: none; font-size: 20px; color: #6b4a2b; cursor: pointer; line-height: 1; }
-.postcard-scene { width: 100%; max-height: 300px; object-fit: cover; image-rendering: pixelated;
-  border: 3px solid #6b4a2b; border-radius: 4px; margin: 6px 0 10px; display: block; }
-.passport-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
-.passport-nav button { background: #6b4a2b; color: #f0e2c0; border: none; border-radius: 6px;
-  width: 40px; height: 34px; font-size: 16px; cursor: pointer; }
-.passport-nav span { font-family: Georgia, serif; color: #4a3a26; min-width: 48px; }
+.postcard-scene { width: 100%; max-height: 190px; object-fit: cover; image-rendering: pixelated;
+  border: 3px solid #6b4a2b; border-radius: 4px; margin: 6px 0 8px; display: block; }
+/* Backpack grouped into collections (landmarks + story threads) */
+.passport-scroll { max-height: 62vh; overflow-y: auto; text-align: left; margin-top: 8px;
+  padding-right: 8px; }
+.collection { margin: 0 0 18px; }
+.collection-head { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px;
+  font-family: Georgia, serif; color: #4a2f12; font-size: 17px;
+  border-bottom: 1px solid #b89b6a; padding-bottom: 5px; }
+.collection-dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid #4a3a26; flex: none; }
+.collection-count { margin-left: auto; font-size: 13px; opacity: 0.65; font-weight: normal; }
+.postcard-entry { margin-bottom: 14px; }
+.postcard-entry h4 { margin: 0 0 3px; color: #4a2f12; font-size: 16px; }
+.note-entry { border-left: 4px solid #8a6b42; padding: 2px 0 2px 12px; margin: 0 0 14px; }
+.note-entry h4 { margin: 0 0 4px; color: #4a2f12; font-size: 16px; font-variant: small-caps;
+  letter-spacing: 0.5px; }
+.note-entry .lore { font-style: italic; margin: 0; }
+.entry-mi { font-size: 12px; opacity: 0.55; font-variant: normal; font-weight: normal; letter-spacing: 0.5px; }
+.quest-mileage { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8a6a38;
+  margin-top: 14px; opacity: 0.9; }
+.badge-mi { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8a6b42;
+  margin: -2px 0 8px; opacity: 0.85; }
 
 /* Settings gear button (stacked above the backpack) */
 .gear-btn { position: absolute; right: 22px; bottom: 100px; z-index: 1000;

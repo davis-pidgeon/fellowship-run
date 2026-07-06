@@ -9,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const db = getServiceClient();
   const { data: user } = await db
     .from("users")
-    .select("id, display_name, avatar_url, chosen_character, color, total_miles, fellowship_id")
+    .select("id, display_name, avatar_url, chosen_character, color, total_miles, fellowship_id, opened_quests")
     .eq("id", userId).maybeSingle();
   if (!user) return res.status(401).json({ error: "unauthenticated" });
 
@@ -37,5 +37,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     fellowship: { id: fellowship.id, name: fellowship.name },
     members: memberList,
     fellowshipMiles,
+    openedQuests: Array.isArray(user.opened_quests) ? user.opened_quests : [],
   });
 }

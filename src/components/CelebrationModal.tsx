@@ -35,6 +35,7 @@ export function CelebrationModal({ badges, onClose }: {
           }}
         />
         <h2>{badge.name}</h2>
+        <div className="badge-mi">Reached at {badge.cumulativeMiles} mi</div>
         <p className="message">{badge.message}</p>
         <p className="lore">{badge.lore}</p>
         <button onClick={advance}>Continue</button>

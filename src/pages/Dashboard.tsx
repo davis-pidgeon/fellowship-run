@@ -17,6 +17,17 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
   const [quest, setQuest] = useState<SideQuest | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(true);
 
+  // Notes the runner has opened: they leave the map and collect in the backpack.
+  // Persisted server-side (per user) so the collection survives across devices.
+  const [openedQuests, setOpenedQuests] = useState<string[]>(me.openedQuests ?? []);
+  const openQuest = (q: SideQuest) => {
+    setQuest(q);
+    if (!openedQuests.includes(q.id)) {
+      setOpenedQuests((prev) => [...prev, q.id]); // optimistic
+      api.questOpen(q.id).catch(() => {}); // persist; transient failures are non-fatal
+    }
+  };
+
   const onSync = async () => {
     setSyncing(true);
     try {
@@ -39,8 +50,9 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
         fellowshipMiles={me.fellowshipMiles}
         focus={focus}
         myMiles={me.user.totalMiles}
-        onOpenQuest={setQuest}
+        onOpenQuest={openQuest}
         onNavigate={() => setPanelCollapsed(true)}
+        openedQuestIds={openedQuests}
       />
       <StatsPanel
         me={me}
@@ -51,7 +63,7 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
         onCollapsedChange={setPanelCollapsed}
       />
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
-      <Passport totalMiles={me.user.totalMiles} />
+      <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />
       <Settings me={me} refresh={refresh} />
       <QuestNote quest={quest} onClose={() => setQuest(null)} />
     </div>

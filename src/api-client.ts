@@ -12,6 +12,7 @@ export interface MeResponse {
   fellowship: { id: string; name: string };
   members: Member[];
   fellowshipMiles: number;
+  openedQuests: string[];
 }
 export interface SyncResponse {
   importedCount: number;
@@ -40,6 +41,12 @@ export function stravaAuthUrl(inviteToken?: string): string {
 export const api = {
   me: () => fetch("/api/me", { credentials: "include" }).then((r) => (r.status === 401 ? null : json<MeResponse>(r))),
   sync: () => fetch("/api/sync", { method: "POST", credentials: "include" }).then(json<SyncResponse>),
+  questOpen: (questId: string) =>
+    fetch("/api/quest-open", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questId }),
+    }).then(json<{ openedQuests: string[] }>),
   chooseCharacter: (character: CharacterKey, color: string) =>
     fetch("/api/character", {
       method: "POST", credentials: "include",
