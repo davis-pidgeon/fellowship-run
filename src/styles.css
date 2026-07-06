@@ -149,7 +149,18 @@ body { margin: 0; }
 .pd-stats-body { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
 .pd-col { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 150px; max-width: 210px; }
 .pd-center { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 0 0 auto; }
+.pd-center .pd-speech { margin-bottom: -46px; position: relative; z-index: 3; } /* sit just above the visible head */
+.pd-center .pd-progress { margin-top: -52px; } /* close the empty gap below the sprite's feet */
 .pd-sprite { width: 120px; height: 180px; object-fit: contain; image-rendering: pixelated; }
+/* cycling speech bubble above the profile sprite */
+.pd-speech { position: relative; max-width: 200px; min-height: 18px; margin-bottom: 4px;
+  padding: 7px 12px; border-radius: 12px; border: 2px solid #6b4a2b; background: #f2e6c4; color: #2b2016;
+  font-family: Georgia, serif; font-size: 13px; font-style: italic; text-align: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.45); animation: pd-speech-in 0.3s ease-out; }
+@keyframes pd-speech-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.pd-speech::after { content: ""; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent;
+  border-top: 9px solid #6b4a2b; }
 .pd-progress { width: 150px; height: 8px; background: #4a3a26; border-radius: 4px; overflow: hidden; }
 .pd-progress-fill { height: 100%; transition: width 0.4s ease; }
 .pd-progress-label { font-size: 11px; opacity: 0.8; }
@@ -197,6 +208,24 @@ body { margin: 0; }
 .ach-toast-icon { font-size: 30px; line-height: 1; }
 .ach-toast-eyebrow { font-size: 9.5px; letter-spacing: 2px; text-transform: uppercase; color: #f4d98b; }
 .ach-toast-name { font-size: 16px; font-weight: bold; }
+
+/* Speech bubble — a character "saying" its recent Strava activity name.
+   Fixed HTML overlay, clamped inside the viewport, anchored above the head. */
+.speech-bubble { position: fixed; transform: translate(-50%, calc(-100% - 8px)); z-index: 900;
+  max-width: 220px; padding: 7px 12px; border-radius: 12px; border: 2px solid #6b4a2b;
+  background: #f2e6c4; color: #2b2016; font-family: Georgia, serif; font-size: 13px; font-style: italic;
+  text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.5); pointer-events: none;
+  animation: speech-in 0.25s ease-out; }
+.speech-bubble::after { content: ""; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent;
+  border-top: 9px solid #6b4a2b; }
+@keyframes speech-in { from { opacity: 0; transform: translate(-50%, calc(-100% + 2px)); } to { opacity: 1; transform: translate(-50%, calc(-100% - 8px)); } }
+
+/* Sayings tab list */
+.pd-saying-row { display: flex; align-items: baseline; gap: 10px; padding: 8px 4px;
+  border-bottom: 1px solid #3a2e1c; }
+.pd-saying-name { flex: 1; font-style: italic; }
+.pd-saying-date { font-size: 12px; opacity: 0.6; white-space: nowrap; }
 
 /* Narrow screens: stack the stats layout — sprite on top, stats as a 2-col grid */
 @media (max-width: 560px) {

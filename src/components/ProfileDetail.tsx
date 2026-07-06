@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Member } from "../api-client";
+import { useState, useEffect } from "react";
+import type { Member, RecentActivity } from "../api-client";
 import { CHARACTERS } from "../../shared/characters";
 import { ROUTE, TOTAL_MILES } from "../../shared/route";
 import { percentComplete } from "../../shared/progress";
@@ -17,6 +17,23 @@ const TABS: { key: Tab; label: string }[] = [
 
 function spriteFor(character: string | null): string {
   return CHARACTERS.find((c) => c.key === character)?.sprite ?? "/sprites/frodo.png";
+}
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// A speech bubble above the profile sprite that cycles through ALL of the
+// character's activity names (newest first), continuously.
+function StatSpeechBubble({ activities }: { activities: RecentActivity[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (activities.length <= 1) return;
+    const iv = setInterval(() => setI((x) => (x + 1) % activities.length), 3500);
+    return () => clearInterval(iv);
+  }, [activities.length]);
+  if (!activities.length) return null;
+  return <div className="pd-speech" key={i}>{activities[i % activities.length].name}</div>;
 }
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
@@ -81,6 +98,7 @@ export function ProfileDetail({ member, onClose }: { member: Member | null; onCl
           <div className="pd-stats-body">
             <div className="pd-col">{left.map(([l, v]) => <StatCard key={l} label={l} value={v} />)}</div>
             <div className="pd-center">
+              <StatSpeechBubble activities={member.activities} />
               <img className="pd-sprite" src={spriteFor(member.chosenCharacter)} alt={member.displayName}
                 style={{ filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 6px ${color})` }} />
               <div className="pd-progress"><div className="pd-progress-fill" style={{ width: `${pct}%`, background: color }} /></div>
@@ -126,7 +144,19 @@ export function ProfileDetail({ member, onClose }: { member: Member | null; onCl
           );
         })()}
         {tab === "sayings" && (
-          <div className="pd-empty">💬 Traveler sayings arrive in Phase 2 — your character will speak them on the map.</div>
+          member.activities.length === 0 ? (
+            <div className="pd-empty">💬 No runs yet — your character's sayings come from your Strava activity names.</div>
+          ) : (
+            <div className="pd-list">
+              <div className="pd-badges-head">Your character says your Strava activity names</div>
+              {member.activities.map((a, i) => (
+                <div className="pd-saying-row" key={i}>
+                  <span className="pd-saying-name">“{a.name}”</span>
+                  <span className="pd-saying-date">{fmtDate(a.date)}</span>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>

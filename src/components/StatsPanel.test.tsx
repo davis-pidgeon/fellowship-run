@@ -7,8 +7,8 @@ const me: MeResponse = {
   user: { id: "u1", displayName: "Davis", avatarUrl: null, chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458 },
   fellowship: { id: "f1", name: "The Fellowship" },
   members: [
-    { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 } },
-    { id: "u2", displayName: "Sam", chosenCharacter: "frodo", color: "#1e88e5", totalMiles: 200, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 } },
+    { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 }, activities: [] },
+    { id: "u2", displayName: "Sam", chosenCharacter: "frodo", color: "#1e88e5", totalMiles: 200, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 }, activities: [] },
   ],
   fellowshipMiles: 658,
   openedQuests: [],

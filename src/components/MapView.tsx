@@ -1,5 +1,6 @@
 import { MapContainer, ImageOverlay, Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import type { Member } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
@@ -133,6 +134,46 @@ const fellowshipIcon = L.icon({
   className: "fellowship-ring",
 });
 
+// Speech bubble rendered as an HTML overlay that tracks a character's head and
+// stays clamped inside a safe viewport zone (never behind the zoom control or
+// off-screen when a runner sits at a clamped map edge).
+function SpeechBubbleLayer({
+  bubble,
+  members,
+  count,
+  t,
+}: {
+  bubble: { memberId: string; text: string } | null;
+  members: Member[];
+  count: number;
+  t: number;
+}) {
+  const map = useMap();
+  const [screen, setScreen] = useState<{ x: number; y: number } | null>(null);
+  const idx = bubble ? members.findIndex((m) => m.id === bubble.memberId) : -1;
+  const update = useCallback(() => {
+    if (idx < 0) return setScreen(null);
+    const p = positionForMiles(members[idx].totalMiles * t, ROUTE_WAYPOINTS);
+    const lng = p.x + (idx - (count - 1) / 2) * STAGGER;
+    // Only speak if the character is actually in view — hide when scrolled away.
+    if (!map.getBounds().contains([latFor(p.y), lng])) return setScreen(null);
+    // Anchor at the character's visible head. The sprite art has ~34% empty
+    // space above the head, so the head sits ~0.30*CHAR_H above the feet (not at
+    // the box top) — anchoring there puts the bubble right above the character.
+    const cp = map.latLngToContainerPoint([latFor(p.y) + 0.32 * CHAR_H, lng]);
+    setScreen({ x: cp.x, y: cp.y });
+  }, [idx, members, count, t, map]);
+  useEffect(() => { update(); }, [update, bubble]);
+  useMapEvents({ move: update, zoom: update });
+  if (!bubble || idx < 0 || !screen) return null;
+  const x = Math.min(Math.max(screen.x, 96), window.innerWidth - 96);
+  const y = Math.min(Math.max(screen.y, 92), window.innerHeight - 40);
+  return createPortal(
+    <div className="speech-bubble" style={{ left: x, top: y }}>{bubble.text}</div>,
+    document.body
+  );
+}
+
 // Keep the min zoom at "cover" on resize so the map never shows empty margins.
 function FitCover() {
   const map = useMap();
@@ -218,6 +259,32 @@ export function MapView({
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Traveler sayings: each character speaks its recent Strava activity names,
+  // newest first then cycling. One character speaks at a time (rotating) so
+  // clustered runners never overlap bubbles. Starts once the intro finishes.
+  const [bubble, setBubble] = useState<{ memberId: string; text: string } | null>(null);
+  useEffect(() => {
+    if (following) return;
+    const speakers = members.filter((m) => m.activities && m.activities.length);
+    if (!speakers.length) return;
+    const cursors: Record<string, number> = {};
+    let rot = 0;
+    let hide: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const m = speakers[rot % speakers.length];
+      rot++;
+      const list = m.activities.slice(0, 10); // map bubbles cycle the recent 10
+      const i = cursors[m.id] ?? 0;
+      cursors[m.id] = (i + 1) % list.length;
+      setBubble({ memberId: m.id, text: list[i].name });
+      clearTimeout(hide);
+      hide = setTimeout(() => setBubble((b) => (b && b.memberId === m.id ? null : b)), 5200);
+    };
+    const start = setTimeout(tick, 1200);
+    const iv = setInterval(tick, 9000);
+    return () => { clearTimeout(start); clearInterval(iv); clearTimeout(hide); };
+  }, [following, members]);
+
   const count = members.length;
   const fPos = positionForMiles(fellowshipMiles * t, ROUTE_WAYPOINTS);
 
@@ -277,6 +344,8 @@ export function MapView({
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />
       ))}
+
+      <SpeechBubbleLayer bubble={bubble} members={members} count={count} t={t} />
 
       {/* Non-interactive so it never steals a tap from the character sprites beneath it. */}
       <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon} interactive={false} />

@@ -7,6 +7,10 @@ export interface RunStats {
   avgPaceSecPerMile: number | null; // null until a run with duration is synced
   weekStreak: number; // longest run of consecutive weeks with a run
 }
+export interface RecentActivity {
+  name: string;
+  date: string; // ISO
+}
 export interface Member {
   id: string;
   displayName: string;
@@ -15,6 +19,7 @@ export interface Member {
   totalMiles: number;
   openedQuests: string[];
   stats: RunStats;
+  activities: RecentActivity[]; // all, newest first (names = the character's sayings)
 }
 export interface MeResponse {
   user: { id: string; displayName: string; avatarUrl: string | null; chosenCharacter: CharacterKey | null; color: string | null; totalMiles: number };

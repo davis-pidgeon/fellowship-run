@@ -27,9 +27,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const memberIds = (members ?? []).map((m) => m.id);
   const { data: acts } = await db
     .from("activities")
-    .select("user_id, distance_miles, moving_seconds, run_date")
+    .select("user_id, distance_miles, moving_seconds, run_date, name")
     .in("user_id", memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"]);
   const agg = new Map<string, { runs: number; dist: number; longest: number; sec: number; secDist: number; weeks: Set<number> }>();
+  const recentByUser = new Map<string, { name: string; date: string }[]>();
   for (const a of acts ?? []) {
     const g = agg.get(a.user_id) ?? { runs: 0, dist: 0, longest: 0, sec: 0, secDist: 0, weeks: new Set<number>() };
     const d = a.distance_miles ?? 0;
@@ -38,6 +39,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const t = a.run_date ? new Date(a.run_date).getTime() : NaN;
     if (!isNaN(t)) g.weeks.add(Math.floor(t / (7 * 86400000))); // 7-day bucket from epoch
     agg.set(a.user_id, g);
+    const list = recentByUser.get(a.user_id) ?? [];
+    list.push({ name: a.name ?? "Untitled run", date: a.run_date });
+    recentByUser.set(a.user_id, list);
   }
   // longest run of consecutive active weeks
   const maxWeekStreak = (weeks: Set<number>): number => {
@@ -60,6 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         avgPaceSecPerMile: g && g.secDist > 0 ? g.sec / g.secDist : null,
         weekStreak: g ? maxWeekStreak(g.weeks) : 0,
       },
+      // All activities, newest first — their names are the character's sayings.
+      // The map cycles the most recent 10; the profile screen cycles them all.
+      activities: (recentByUser.get(m.id) ?? [])
+        .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")),
     };
   });
   const fellowshipMiles = memberList.reduce((s, m) => s + (m.totalMiles ?? 0), 0);
