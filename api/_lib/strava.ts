@@ -67,7 +67,7 @@ export async function fetchRunsSince(
     if (res.status === 429) throw new Error("Strava rate limit reached");
     if (!res.ok) throw new Error(`Strava activities request failed: ${res.status}`);
     const batch = (await res.json()) as Array<{
-      id: number; type: string; distance: number; start_date: string; name: string;
+      id: number; type: string; distance: number; start_date: string; name: string; moving_time?: number;
     }>;
     for (const a of batch) {
       if (a.type === "Run") {
@@ -76,6 +76,7 @@ export async function fetchRunsSince(
           distanceMiles: metersToMiles(a.distance),
           runDate: a.start_date,
           name: a.name,
+          movingSeconds: a.moving_time,
         });
       }
     }

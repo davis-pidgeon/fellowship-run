@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { MeResponse } from "../api-client";
 import { api } from "../api-client";
+import { computeAchievements, type EarnedAchievement } from "../achievements";
+import { AchievementToasts } from "../components/AchievementToasts";
 import type { Milestone } from "../../shared/types";
 import { MapView, type MapFocus } from "../components/MapView";
 import { StatsPanel } from "../components/StatsPanel";
@@ -8,6 +10,9 @@ import { CelebrationModal } from "../components/CelebrationModal";
 import { Passport } from "../components/Passport";
 import { Settings } from "../components/Settings";
 import { QuestNote } from "../components/QuestNote";
+import { ProfilePopover, ClusterPicker, type ProfileTarget, type ClusterTarget } from "../components/ProfilePopover";
+import { ProfileDetail } from "../components/ProfileDetail";
+import type { Member } from "../api-client";
 import type { SideQuest } from "../../shared/sidequests";
 
 export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: () => void }) {
@@ -16,6 +21,14 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [quest, setQuest] = useState<SideQuest | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(true);
+  const [profile, setProfile] = useState<ProfileTarget | null>(null);
+  const [cluster, setCluster] = useState<ClusterTarget | null>(null);
+  const [profileDetail, setProfileDetail] = useState<Member | null>(null);
+
+  const onSelectRunner = (members: Member[], pt: { x: number; y: number }) => {
+    if (members.length <= 1) setProfile({ member: members[0], pt });
+    else setCluster({ members, pt });
+  };
 
   // Notes the runner has opened: they leave the map and collect in the backpack.
   // Persisted server-side (per user) so the collection survives across devices.
@@ -27,6 +40,25 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
       api.questOpen(q.id).catch(() => {}); // persist; transient failures are non-fatal
     }
   };
+
+  // Detect newly-earned achievements for the current user and pop a toast.
+  // notifiedRef seeds from the server so nothing already-seen re-fires; the first
+  // pass seeds silently (no flood of pre-existing badges), later passes toast.
+  const [toasts, setToasts] = useState<EarnedAchievement[]>([]);
+  const notifiedRef = useRef<Set<string>>(new Set(me.notifiedAchievements));
+  const seededRef = useRef(false);
+  useEffect(() => {
+    const base = me.members.find((m) => m.id === me.user.id);
+    if (!base) return;
+    const earned = computeAchievements({ ...base, openedQuests }).filter((a) => a.earned);
+    const fresh = earned.filter((a) => !notifiedRef.current.has(a.id));
+    if (fresh.length) {
+      fresh.forEach((a) => notifiedRef.current.add(a.id));
+      api.achievementsSeen(fresh.map((a) => a.id)).catch(() => {});
+      if (seededRef.current) setToasts((prev) => [...prev, ...fresh]);
+    }
+    seededRef.current = true;
+  }, [me, openedQuests]);
 
   const onSync = async () => {
     setSyncing(true);
@@ -53,6 +85,7 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
         onOpenQuest={openQuest}
         onNavigate={() => setPanelCollapsed(true)}
         openedQuestIds={openedQuests}
+        onSelectRunner={onSelectRunner}
       />
       <StatsPanel
         me={me}
@@ -66,6 +99,18 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
       <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />
       <Settings me={me} refresh={refresh} />
       <QuestNote quest={quest} onClose={() => setQuest(null)} />
+      <ProfilePopover
+        target={profile}
+        onClose={() => setProfile(null)}
+        onViewDetails={(m) => { setProfile(null); setProfileDetail(m); }}
+      />
+      <ClusterPicker
+        target={cluster}
+        onClose={() => setCluster(null)}
+        onPick={(m) => setCluster((c) => { setProfile({ member: m, pt: c!.pt }); return null; })}
+      />
+      <ProfileDetail member={profileDetail} onClose={() => setProfileDetail(null)} />
+      <AchievementToasts toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
     </div>
   );
 }

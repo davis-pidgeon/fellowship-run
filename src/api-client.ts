@@ -1,11 +1,20 @@
 import type { CharacterKey, Milestone } from "../shared/types";
 
+export interface RunStats {
+  runs: number;
+  longestMiles: number;
+  avgMiles: number;
+  avgPaceSecPerMile: number | null; // null until a run with duration is synced
+  weekStreak: number; // longest run of consecutive weeks with a run
+}
 export interface Member {
   id: string;
   displayName: string;
   chosenCharacter: CharacterKey | null;
   color: string | null;
   totalMiles: number;
+  openedQuests: string[];
+  stats: RunStats;
 }
 export interface MeResponse {
   user: { id: string; displayName: string; avatarUrl: string | null; chosenCharacter: CharacterKey | null; color: string | null; totalMiles: number };
@@ -13,6 +22,7 @@ export interface MeResponse {
   members: Member[];
   fellowshipMiles: number;
   openedQuests: string[];
+  notifiedAchievements: string[];
 }
 export interface SyncResponse {
   importedCount: number;
@@ -47,6 +57,12 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questId }),
     }).then(json<{ openedQuests: string[] }>),
+  achievementsSeen: (ids: string[]) =>
+    fetch("/api/achievements-seen", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    }).then(json<{ notifiedAchievements: string[] }>),
   chooseCharacter: (character: CharacterKey, color: string) =>
     fetch("/api/character", {
       method: "POST", credentials: "include",

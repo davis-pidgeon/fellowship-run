@@ -1,4 +1,4 @@
-import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, ImageOverlay, Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import type { Member } from "../api-client";
@@ -61,7 +61,7 @@ function trailPoints(miles: number, offsetX: number): L.LatLngExpression[] {
   return pts;
 }
 
-function RunnerOverlay({ member, miles, offsetX }: { member: Member; miles: number; offsetX: number }) {
+function RunnerOverlay({ member, miles, offsetX, onSelect, cluster }: { member: Member; miles: number; offsetX: number; onSelect: (members: Member[], pt: { x: number; y: number }) => void; cluster: Member[] }) {
   const map = useMap();
   const p = positionForMiles(miles, ROUTE_WAYPOINTS);
   const lat = latFor(p.y);
@@ -89,10 +89,8 @@ function RunnerOverlay({ member, miles, offsetX }: { member: Member; miles: numb
           }
         },
         click: (e) => {
-          L.popup()
-            .setLatLng(e.latlng)
-            .setContent(`${member.displayName} — ${Math.round(member.totalMiles)} mi`)
-            .openOn(map);
+          const p = map.latLngToContainerPoint(e.latlng);
+          onSelect(cluster, { x: p.x, y: p.y });
         },
       }}
     />
@@ -193,6 +191,7 @@ export function MapView({
   onOpenQuest,
   onNavigate,
   openedQuestIds,
+  onSelectRunner,
 }: {
   members: Member[];
   fellowshipMiles: number;
@@ -201,6 +200,7 @@ export function MapView({
   onOpenQuest: (q: SideQuest) => void;
   onNavigate: () => void;
   openedQuestIds: string[];
+  onSelectRunner: (members: Member[], pt: { x: number; y: number }) => void;
 }) {
   const [t, setT] = useState(0);
   const [following, setFollowing] = useState(true);
@@ -220,6 +220,17 @@ export function MapView({
 
   const count = members.length;
   const fPos = positionForMiles(fellowshipMiles * t, ROUTE_WAYPOINTS);
+
+  // Map-space positions (incl. stagger) so we can detect which runners overlap.
+  // Tapping a runner returns everyone within CLUSTER_DIST so the UI can offer a
+  // "fan-out" picker instead of guessing which stacked character was meant.
+  const CLUSTER_DIST = 42;
+  const runnerPos = members.map((m, i) => {
+    const p = positionForMiles(m.totalMiles * t, ROUTE_WAYPOINTS);
+    return { x: p.x + (i - (count - 1) / 2) * STAGGER, y: p.y };
+  });
+  const clusterFor = (idx: number): Member[] =>
+    members.filter((_, j) => Math.hypot(runnerPos[idx].x - runnerPos[j].x, runnerPos[idx].y - runnerPos[j].y) <= CLUSTER_DIST);
 
   // Open zoomed-in at the Shire; the camera follows from there during the intro.
   // minZoom = cover so the user can zoom back out to see the whole map.
@@ -260,16 +271,15 @@ export function MapView({
       })}
 
       {members.map((m, i) => (
-        <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} />
+        <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} onSelect={onSelectRunner} cluster={clusterFor(i)} />
       ))}
 
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />
       ))}
 
-      <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon}>
-        <Popup>The Fellowship — {Math.round(fellowshipMiles)} mi</Popup>
-      </Marker>
+      {/* Non-interactive so it never steals a tap from the character sprites beneath it. */}
+      <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon} interactive={false} />
     </MapContainer>
   );
 }

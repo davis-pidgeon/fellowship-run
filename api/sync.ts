@@ -91,8 +91,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         distance_miles: a.distanceMiles,
         run_date: a.runDate,
         name: a.name,
+        moving_seconds: a.movingSeconds ?? null,
       }))
     );
+  }
+
+  // Backfill duration on already-imported runs (earlier syncs didn't capture
+  // moving_time). Cheap for a friend-group's activity counts.
+  const existingSet = new Set(existingIds);
+  for (const a of fetched) {
+    if (existingSet.has(a.stravaActivityId) && a.movingSeconds != null) {
+      await db.from("activities")
+        .update({ moving_seconds: a.movingSeconds })
+        .eq("user_id", userId)
+        .eq("strava_activity_id", a.stravaActivityId);
+    }
   }
 
   // Update user's total_miles and last_sync_at

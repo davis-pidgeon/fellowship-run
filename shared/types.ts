@@ -18,6 +18,7 @@ export interface RunActivity {
   distanceMiles: number;
   runDate: string; // ISO 8601
   name: string;
+  movingSeconds?: number; // Strava moving_time, for pace; optional for older data
 }
 
 export interface Position {
