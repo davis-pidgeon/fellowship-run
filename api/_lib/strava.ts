@@ -23,6 +23,11 @@ export interface StravaDeps {
 const TOKEN_URL = "https://www.strava.com/oauth/token";
 const ACTIVITIES_URL = "https://www.strava.com/api/v3/athlete/activities";
 
+// Activity classifications that count toward the on-foot journey. Bikes, swims,
+// etc. are excluded. We match on Strava's modern `sport_type` (more specific),
+// falling back to the legacy `type` when a payload omits it.
+const FOOT_TRAVEL_TYPES = new Set(["Run", "TrailRun", "VirtualRun", "Walk", "Hike"]);
+
 async function postToken(body: Record<string, string>, deps: StravaDeps) {
   const f = deps.fetchImpl ?? fetch;
   const res = await f(TOKEN_URL, {
@@ -67,10 +72,10 @@ export async function fetchRunsSince(
     if (res.status === 429) throw new Error("Strava rate limit reached");
     if (!res.ok) throw new Error(`Strava activities request failed: ${res.status}`);
     const batch = (await res.json()) as Array<{
-      id: number; type: string; distance: number; start_date: string; name: string; moving_time?: number;
+      id: number; type: string; sport_type?: string; distance: number; start_date: string; name: string; moving_time?: number;
     }>;
     for (const a of batch) {
-      if (a.type === "Run") {
+      if (FOOT_TRAVEL_TYPES.has(a.sport_type ?? a.type)) {
         runs.push({
           stravaActivityId: a.id,
           distanceMiles: metersToMiles(a.distance),

@@ -37,7 +37,7 @@ describe("refreshTokens", () => {
 });
 
 describe("fetchRunsSince", () => {
-  it("keeps only runs, converts meters to miles, and stops on a short page", async () => {
+  it("converts meters to miles and stops on a short page", async () => {
     const page1 = [
       { id: 1, type: "Run", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Morning" },
       { id: 2, type: "Ride", distance: 20000, start_date: "2026-07-01T00:00:00Z", name: "Bike" },
@@ -48,5 +48,41 @@ describe("fetchRunsSince", () => {
     expect(runs[0].stravaActivityId).toBe(1);
     expect(runs[0].distanceMiles).toBeCloseTo(1, 6);
     expect(fetchImpl).toHaveBeenCalledTimes(1); // short page => no page 2
+  });
+
+  it("keeps all foot-travel types (Run, TrailRun, VirtualRun, Walk, Hike)", async () => {
+    const page = [
+      { id: 1, type: "Run", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Road" },
+      { id: 2, type: "TrailRun", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Trail" },
+      { id: 3, type: "VirtualRun", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Treadmill" },
+      { id: 4, type: "Walk", distance: 1609.344, start_date: "2026-07-06T00:00:00Z", name: "USA BEAT BELGIUM" },
+      { id: 5, type: "Hike", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Mountain" },
+    ];
+    const fetchImpl = vi.fn(() => jsonResponse(page)) as unknown as typeof fetch;
+    const runs = await fetchRunsSince("acc", 0, fetchImpl);
+    expect(runs.map((r) => r.stravaActivityId)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("drops non-foot activities (Ride, Swim, etc.)", async () => {
+    const page = [
+      { id: 1, type: "Run", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Run" },
+      { id: 2, type: "Ride", distance: 20000, start_date: "2026-07-01T00:00:00Z", name: "Bike" },
+      { id: 3, type: "Swim", distance: 2000, start_date: "2026-07-01T00:00:00Z", name: "Pool" },
+    ];
+    const fetchImpl = vi.fn(() => jsonResponse(page)) as unknown as typeof fetch;
+    const runs = await fetchRunsSince("acc", 0, fetchImpl);
+    expect(runs.map((r) => r.stravaActivityId)).toEqual([1]);
+  });
+
+  it("prefers sport_type over legacy type when classifying", async () => {
+    // Strava's modern sport_type is more specific; a Ride mislabeled by a stale
+    // legacy `type` must still be excluded, and a TrailRun recognized.
+    const page = [
+      { id: 1, type: "Run", sport_type: "TrailRun", distance: 1609.344, start_date: "2026-07-01T00:00:00Z", name: "Trail" },
+      { id: 2, type: "Run", sport_type: "Ride", distance: 20000, start_date: "2026-07-01T00:00:00Z", name: "E-bike" },
+    ];
+    const fetchImpl = vi.fn(() => jsonResponse(page)) as unknown as typeof fetch;
+    const runs = await fetchRunsSince("acc", 0, fetchImpl);
+    expect(runs.map((r) => r.stravaActivityId)).toEqual([1]);
   });
 });
