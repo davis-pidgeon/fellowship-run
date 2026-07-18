@@ -44,7 +44,7 @@ export default function Dashboard({
 
   // Notes the runner has opened: they leave the map and collect in the backpack.
   // Persisted server-side (per user) so the collection survives across devices.
-  const [openedQuests, setOpenedQuests] = useState<string[]>(me.openedQuests ?? []);
+  const [openedQuests, setOpenedQuests] = useState<string[]>(me?.openedQuests ?? []);
   const openQuest = (q: SideQuest) => {
     setQuest(q);
     if (!openedQuests.includes(q.id)) {
@@ -57,9 +57,10 @@ export default function Dashboard({
   // notifiedRef seeds from the server so nothing already-seen re-fires; the first
   // pass seeds silently (no flood of pre-existing badges), later passes toast.
   const [toasts, setToasts] = useState<EarnedAchievement[]>([]);
-  const notifiedRef = useRef<Set<string>>(new Set(me.notifiedAchievements));
+  const notifiedRef = useRef<Set<string>>(new Set(me?.notifiedAchievements ?? []));
   const seededRef = useRef(false);
   useEffect(() => {
+    if (!me) return;
     const base = me.members.find((m) => m.id === me.user.id);
     if (!base) return;
     const earned = computeAchievements({ ...base, openedQuests }).filter((a) => a.earned);
@@ -98,26 +99,29 @@ export default function Dashboard({
         onGlobal={() => setView("global")}
       />
       <MapView
-        members={me.members}
-        fellowshipMiles={me.fellowshipMiles}
+        members={view === "global" ? [] : me?.members ?? []}
+        fellowshipMiles={view === "global" ? 0 : me?.fellowshipMiles ?? 0}
+        ghosts={view === "global" ? globalData?.ghosts : undefined}
         focus={focus}
-        myMiles={me.user.totalMiles}
+        myMiles={view === "global" ? 0 : me?.user.totalMiles ?? 0}
         onOpenQuest={openQuest}
         onNavigate={() => setPanelCollapsed(true)}
         openedQuestIds={openedQuests}
         onSelectRunner={onSelectRunner}
       />
-      <StatsPanel
-        me={me}
-        onSync={onSync}
-        syncing={syncing}
-        onSelectMember={(id) => setFocus({ id, nonce: Date.now() })}
-        collapsed={panelCollapsed}
-        onCollapsedChange={setPanelCollapsed}
-      />
+      {view === "fellowship" && me && (
+        <StatsPanel
+          me={me}
+          onSync={onSync}
+          syncing={syncing}
+          onSelectMember={(id) => setFocus({ id, nonce: Date.now() })}
+          collapsed={panelCollapsed}
+          onCollapsedChange={setPanelCollapsed}
+        />
+      )}
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
-      <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />
-      <Settings me={me} refresh={refresh} />
+      {me && <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />}
+      {me && <Settings me={me} refresh={refresh} />}
       <QuestNote quest={quest} onClose={() => setQuest(null)} />
       <ProfilePopover
         target={profile}

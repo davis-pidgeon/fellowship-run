@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import L from "leaflet";
 import type { Member } from "../api-client";
+import type { Ghost } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
 import { ROUTE as ROUTE_WAYPOINTS } from "../../shared/route";
 import { CHARACTERS, DEFAULT_COLOR } from "../../shared/characters";
@@ -92,6 +93,30 @@ function RunnerOverlay({ member, miles, offsetX, onSelect, cluster }: { member: 
         click: (e) => {
           const p = map.latLngToContainerPoint(e.latlng);
           onSelect(cluster, { x: p.x, y: p.y });
+        },
+      }}
+    />
+  );
+}
+
+function GhostOverlay({ ghost }: { ghost: Ghost }) {
+  const p = positionForMiles(ghost.totalMiles, ROUTE_WAYPOINTS);
+  const lat = latFor(p.y);
+  const footLat = lat - FOOT_FRAC * CHAR_H;
+  const overlayBounds: L.LatLngBoundsExpression = [
+    [footLat, p.x - CHAR_W / 2],
+    [footLat + CHAR_H, p.x + CHAR_W / 2],
+  ];
+  return (
+    <ImageOverlay
+      url={spriteFor(ghost.chosenCharacter)}
+      bounds={overlayBounds}
+      zIndex={600}
+      interactive={false}
+      eventHandlers={{
+        add: (e) => {
+          const el = (e.target as L.ImageOverlay).getElement();
+          if (el) { el.style.imageRendering = "pixelated"; el.style.opacity = "0.38"; }
         },
       }}
     />
@@ -233,6 +258,7 @@ export function MapView({
   onNavigate,
   openedQuestIds,
   onSelectRunner,
+  ghosts,
 }: {
   members: Member[];
   fellowshipMiles: number;
@@ -242,6 +268,7 @@ export function MapView({
   onNavigate: () => void;
   openedQuestIds: string[];
   onSelectRunner: (members: Member[], pt: { x: number; y: number }) => void;
+  ghosts?: Ghost[];
 }) {
   const [t, setT] = useState(0);
   const [following, setFollowing] = useState(true);
@@ -340,6 +367,8 @@ export function MapView({
       {members.map((m, i) => (
         <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} onSelect={onSelectRunner} cluster={clusterFor(i)} />
       ))}
+
+      {ghosts?.map((g) => <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} />)}
 
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />

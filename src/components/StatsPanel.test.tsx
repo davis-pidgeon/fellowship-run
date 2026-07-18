@@ -5,6 +5,8 @@ import type { MeResponse } from "../api-client";
 
 const me: MeResponse = {
   user: { id: "u1", displayName: "Davis", avatarUrl: null, chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458 },
+  isAdmin: false,
+  fellowships: [{ id: "f1", name: "The Fellowship" }],
   fellowship: { id: "f1", name: "The Fellowship" },
   members: [
     { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 }, activities: [] },
