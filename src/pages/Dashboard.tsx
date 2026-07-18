@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import type { MeResponse } from "../api-client";
+import type { MeResponse, GlobalResponse } from "../api-client";
 import { api } from "../api-client";
 import { computeAchievements, type EarnedAchievement } from "../achievements";
 import { AchievementToasts } from "../components/AchievementToasts";
-import type { Milestone } from "../../shared/types";
+import type { FellowshipBadge } from "../../shared/types";
 import { MapView, type MapFocus } from "../components/MapView";
 import { StatsPanel } from "../components/StatsPanel";
 import { CelebrationModal } from "../components/CelebrationModal";
@@ -14,10 +14,22 @@ import { ProfilePopover, ClusterPicker, type ProfileTarget, type ClusterTarget }
 import { ProfileDetail } from "../components/ProfileDetail";
 import type { Member } from "../api-client";
 import type { SideQuest } from "../../shared/sidequests";
+import { FellowshipSwitcher } from "../components/FellowshipSwitcher";
+import type { DashboardView } from "../useSession";
 
-export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: () => void }) {
+export default function Dashboard({
+  me, refresh, globalData, fellowshipId, setFellowshipId, view, setView,
+}: {
+  me: MeResponse | null;
+  refresh: () => void;
+  globalData: GlobalResponse | null;
+  fellowshipId: string | undefined;
+  setFellowshipId: (id: string) => void;
+  view: DashboardView;
+  setView: (v: DashboardView) => void;
+}) {
   const [syncing, setSyncing] = useState(false);
-  const [badges, setBadges] = useState<Milestone[]>([]);
+  const [badges, setBadges] = useState<FellowshipBadge[]>([]);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [quest, setQuest] = useState<SideQuest | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(true);
@@ -61,9 +73,10 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
   }, [me, openedQuests]);
 
   const onSync = async () => {
+    if (!fellowshipId) return;
     setSyncing(true);
     try {
-      const res = await api.sync();
+      const res = await api.sync(fellowshipId);
       if (res.newBadges.length) setBadges(res.newBadges);
       refresh();
     } catch (e) {
@@ -77,6 +90,13 @@ export default function Dashboard({ me, refresh }: { me: MeResponse; refresh: ()
 
   return (
     <div className="dashboard">
+      <FellowshipSwitcher
+        fellowships={(view === "global" ? globalData?.fellowships : me?.fellowships) ?? []}
+        fellowshipId={fellowshipId}
+        view={view}
+        onSelect={(id) => { setFellowshipId(id); setView("fellowship"); }}
+        onGlobal={() => setView("global")}
+      />
       <MapView
         members={me.members}
         fellowshipMiles={me.fellowshipMiles}

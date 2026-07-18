@@ -8,11 +8,16 @@ import Admin from "./pages/Admin";
 import { LoadingRing } from "./components/LoadingRing";
 
 function Home() {
-  const { data, loading, refresh } = useSession();
+  const { data, loading, refresh, globalData, fellowshipId, setFellowshipId, view, setView } = useSession();
   if (loading) return <LoadingRing label="Summoning the Fellowship…" />;
-  if (!data) return <Navigate to="/login" replace />;
-  if (!data.user.chosenCharacter) return <CharacterSelect onChosen={refresh} />;
-  return <Dashboard me={data} refresh={refresh} />;
+  if (!data && !globalData) return <Navigate to="/login" replace />;
+  if (data && !data.user.chosenCharacter) return <CharacterSelect onChosen={refresh} />;
+  return (
+    <Dashboard
+      me={data} refresh={refresh} globalData={globalData}
+      fellowshipId={fellowshipId} setFellowshipId={setFellowshipId} view={view} setView={setView}
+    />
+  );
 }
 
 function AdminRoute() {

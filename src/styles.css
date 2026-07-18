@@ -286,3 +286,7 @@ body { margin: 0; }
 .admin-table th, .admin-table td { padding: 6px 8px; text-align: center; border-bottom: 1px solid #3a2e1e; }
 .admin-table th:first-child, .admin-table td:first-child { text-align: left; }
 .admin-error { color: #e57373; }
+
+.fellowship-switcher { position: absolute; top: 12px; left: 12px; z-index: 1000; display: flex; gap: 6px; flex-wrap: wrap; }
+.fellowship-switcher button { background: #1d1710; color: #f0e2c0; border: 1px solid #4a3a26; border-radius: 6px; padding: 4px 10px; font-family: Georgia, serif; font-size: 13px; cursor: pointer; }
+.fellowship-switcher button.active { background: #c0392b; border-color: #c0392b; color: #fff; }
