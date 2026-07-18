@@ -377,7 +377,7 @@ export function MapView({
       <SpeechBubbleLayer bubble={bubble} members={members} count={count} t={t} />
 
       {/* Non-interactive so it never steals a tap from the character sprites beneath it. */}
-      <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon} interactive={false} />
+      {!ghosts && <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon} interactive={false} />}
     </MapContainer>
   );
 }
