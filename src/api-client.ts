@@ -77,7 +77,7 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function stravaAuthUrl(clientId: string | null, inviteToken?: string): string {
+export function stravaAuthUrl(clientId?: string | null, inviteToken?: string): string {
   const params = new URLSearchParams({
     client_id: clientId ?? import.meta.env.VITE_STRAVA_CLIENT_ID,
     redirect_uri: import.meta.env.VITE_STRAVA_REDIRECT_URI,
