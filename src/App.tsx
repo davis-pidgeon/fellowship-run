@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Join from "./pages/Join";
 import CharacterSelect from "./pages/CharacterSelect";
 import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 import { LoadingRing } from "./components/LoadingRing";
 
 function Home() {
@@ -14,12 +15,20 @@ function Home() {
   return <Dashboard me={data} refresh={refresh} />;
 }
 
+function AdminRoute() {
+  const { data, loading } = useSession();
+  if (loading) return <LoadingRing label="Summoning the Fellowship…" />;
+  if (!data) return <Navigate to="/login" replace />;
+  return <Admin me={data} />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/join" element={<Join />} />
+        <Route path="/admin" element={<AdminRoute />} />
         <Route path="/" element={<Home />} />
       </Routes>
     </BrowserRouter>
