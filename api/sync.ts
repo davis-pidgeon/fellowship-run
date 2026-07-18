@@ -135,8 +135,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // The syncing user is always a member of every fellowship in this loop
     // (fellowships came from their own memberships), and this endpoint only
     // ever adds activities for that one user — so "before" is always the
-    // pooled total minus exactly what this sync just added.
-    const addedPooled = newActivities.reduce((s, a) => s + a.distanceMiles, 0);
+    // pooled total minus exactly what this sync just added, filtered to
+    // this fellowship's own type/date rules (matching pooledAfter above).
+    const addedPooled = memberTotal(newActivities, fellowship);
     const pooledBefore = pooledAfter - addedPooled;
     if (fellowship.id === viewFellowshipId) responseFellowshipMiles = pooledAfter;
 
