@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const fellowship: Fellowship = { id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types };
       const { data: acts } = await db.from("activities").select("distance_miles, run_date, sport_type").eq("user_id", u.id);
       const activities: RunActivity[] = (acts ?? []).map((a) => ({
-        stravaActivityId: 0, distanceMiles: a.distance_miles, runDate: a.run_date, name: "", sportType: a.sport_type,
+        stravaActivityId: 0, distanceMiles: a.distance_miles ?? 0, runDate: a.run_date, name: "", sportType: a.sport_type,
       }));
       ghosts.push({
         userId: u.id, fellowshipId: f.id, fellowshipName: f.name,
