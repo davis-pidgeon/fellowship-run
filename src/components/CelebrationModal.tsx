@@ -1,12 +1,12 @@
 import { useState } from "react";
-import type { Milestone } from "../../shared/types";
+import type { FellowshipBadge } from "../../shared/types";
 
 export function CelebrationModal({ badges, onClose }: {
-  badges: Milestone[]; onClose: () => void;
+  badges: FellowshipBadge[]; onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
   if (badges.length === 0) return null;
-  const badge = badges[index];
+  const { milestone: badge, fellowshipName } = badges[index];
 
   const advance = () => {
     if (index + 1 < badges.length) setIndex(index + 1);
@@ -22,18 +22,12 @@ export function CelebrationModal({ badges, onClose }: {
           src={`/scenes/${badge.landmarkId}.png`}
           alt={badge.name}
           style={{
-            width: "100%",
-            maxHeight: 220,
-            objectFit: "cover",
-            imageRendering: "pixelated",
-            borderRadius: 4,
-            marginBottom: 12,
-            display: "block",
+            width: "100%", maxHeight: 220, objectFit: "cover", imageRendering: "pixelated",
+            borderRadius: 4, marginBottom: 12, display: "block",
           }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
+        <div className="badge-fellowship">{fellowshipName}</div>
         <h2>{badge.name}</h2>
         <div className="badge-mi">Reached at {badge.cumulativeMiles} mi</div>
         <p className="message">{badge.message}</p>
