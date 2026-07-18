@@ -4,175 +4,157 @@ import { getServiceClient } from "./_lib/supabase.js";
 import { getEnv } from "./_lib/env.js";
 import { decrypt, encrypt } from "./_lib/crypto.js";
 import { refreshTokens, fetchRunsSince } from "./_lib/strava.js";
-import { computeSync } from "../shared/sync-core.js";
+import {
+  memberTotal, earliestStartDate, unionActivityTypes, newActivitiesOnly, computeFellowshipTotals,
+} from "../shared/fellowship-sync.js";
 import { crossedLandmarks } from "../shared/milestones.js";
 import { ROUTE } from "../shared/route.js";
+import type { Fellowship, RunActivity } from "../shared/types.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).end();
   const userId = await readSessionUserId(req);
   if (!userId) return res.status(401).json({ error: "unauthenticated" });
+  const viewFellowshipId = req.query.fellowshipId as string | undefined;
 
   const db = getServiceClient();
   const key = getEnv("TOKEN_ENCRYPTION_KEY");
 
   const { data: user } = await db
     .from("users")
-    .select("id, fellowship_id, strava_access_token, strava_refresh_token, token_expires_at, last_sync_at, total_miles")
-    .eq("id", userId)
-    .single();
+    .select("id, strava_access_token, strava_refresh_token, token_expires_at, strava_client_id, strava_client_secret")
+    .eq("id", userId).single();
   if (!user) return res.status(401).json({ error: "unauthenticated" });
 
-  // Refresh token if expired (with 60s buffer)
+  const { data: memberships } = await db
+    .from("fellowship_members")
+    .select("fellowship:fellowship_id(id, name, start_date, allowed_activity_types)")
+    .eq("user_id", userId);
+  const fellowships: (Fellowship & { name: string })[] = (memberships ?? [])
+    .map((m) => m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[] } | null)
+    .filter((f): f is NonNullable<typeof f> => !!f)
+    .map((f) => ({ id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types }));
+  if (fellowships.length === 0) return res.status(500).json({ error: "no fellowship membership" });
+
+  const appClientId = user.strava_client_id ?? getEnv("STRAVA_CLIENT_ID");
+  const appClientSecret = user.strava_client_secret
+    ? decrypt(user.strava_client_secret, key)
+    : getEnv("STRAVA_CLIENT_SECRET");
+
   let accessToken = decrypt(user.strava_access_token, key);
   const expiresMs = new Date(user.token_expires_at).getTime();
   if (Date.now() >= expiresMs - 60_000) {
     try {
       const refreshed = await refreshTokens(decrypt(user.strava_refresh_token, key), {
-        clientId: getEnv("STRAVA_CLIENT_ID"),
-        clientSecret: getEnv("STRAVA_CLIENT_SECRET"),
+        clientId: appClientId, clientSecret: appClientSecret,
       });
       accessToken = refreshed.accessToken;
-      await db
-        .from("users")
-        .update({
-          strava_access_token: encrypt(refreshed.accessToken, key),
-          strava_refresh_token: encrypt(refreshed.refreshToken, key),
-          token_expires_at: new Date(refreshed.expiresAt * 1000).toISOString(),
-        })
-        .eq("id", userId);
+      await db.from("users").update({
+        strava_access_token: encrypt(refreshed.accessToken, key),
+        strava_refresh_token: encrypt(refreshed.refreshToken, key),
+        token_expires_at: new Date(refreshed.expiresAt * 1000).toISOString(),
+      }).eq("id", userId);
     } catch {
       return res.status(409).json({ error: "reconnect" });
     }
   }
 
-  // Always fetch the whole journey window from JOURNEY_START_DATE — never use
-  // last_sync_at as the fetch floor. Strava's `after` filters on each run's
-  // start_date, but last_sync_at is wall-clock sync time: a run whose start
-  // predates a sync that ran BEFORE the run finished uploading to Strava would
-  // otherwise fall into a permanent blind spot and never be imported. Refetching
-  // the full window every time is safe because computeSync de-duplicates by
-  // Strava activity id, so already-imported runs are ignored. JOURNEY_START_DATE
-  // (ISO, e.g. "2026-07-01") still floors the import so runs from before the
-  // quest began are never counted. last_sync_at is kept only as a display value.
-  const afterEpoch = process.env.JOURNEY_START_DATE
-    ? Math.floor(new Date(process.env.JOURNEY_START_DATE).getTime() / 1000)
-    : 0;
+  const afterEpoch = Math.floor(new Date(earliestStartDate(fellowships)).getTime() / 1000);
+  const allowedTypes = new Set(unionActivityTypes(fellowships));
   let fetched;
   try {
-    fetched = await fetchRunsSince(accessToken, afterEpoch);
+    fetched = await fetchRunsSince(accessToken, afterEpoch, allowedTypes);
   } catch (e) {
-    if (e instanceof Error && e.message.includes("rate limit")) {
-      return res.status(429).json({ error: "rate_limited" });
-    }
+    if (e instanceof Error && e.message.includes("rate limit")) return res.status(429).json({ error: "rate_limited" });
     return res.status(502).json({ error: "strava_unavailable" });
   }
 
-  // Load existing activity IDs for deduplication
-  const { data: existing } = await db
-    .from("activities")
-    .select("strava_activity_id")
-    .eq("user_id", userId);
-  const existingIds = (existing ?? []).map((a: { strava_activity_id: number }) => a.strava_activity_id);
+  const { data: existingRows } = await db.from("activities").select("strava_activity_id").eq("user_id", userId);
+  const existingIds = (existingRows ?? []).map((a: { strava_activity_id: number }) => a.strava_activity_id);
+  const newActivities = newActivitiesOnly(fetched, existingIds);
 
-  const result = computeSync({
-    fetched,
-    existingActivityIds: existingIds,
-    previousTotalMiles: user.total_miles,
-    route: ROUTE,
-  });
-
-  // Insert new activities
-  if (result.newActivities.length > 0) {
+  if (newActivities.length > 0) {
     await db.from("activities").insert(
-      result.newActivities.map((a) => ({
+      newActivities.map((a) => ({
         user_id: userId,
         strava_activity_id: a.stravaActivityId,
         distance_miles: a.distanceMiles,
         run_date: a.runDate,
         name: a.name,
         moving_seconds: a.movingSeconds ?? null,
+        sport_type: a.sportType,
       }))
     );
   }
 
-  // Backfill duration on already-imported runs (earlier syncs didn't capture
-  // moving_time). Cheap for a friend-group's activity counts.
+  // Backfill duration on already-imported runs (parity with the old behavior).
   const existingSet = new Set(existingIds);
   for (const a of fetched) {
     if (existingSet.has(a.stravaActivityId) && a.movingSeconds != null) {
-      await db.from("activities")
-        .update({ moving_seconds: a.movingSeconds })
-        .eq("user_id", userId)
-        .eq("strava_activity_id", a.stravaActivityId);
+      await db.from("activities").update({ moving_seconds: a.movingSeconds })
+        .eq("user_id", userId).eq("strava_activity_id", a.stravaActivityId);
     }
   }
 
-  // Update user's total_miles and last_sync_at
-  await db
-    .from("users")
-    .update({
-      total_miles: result.newTotalMiles,
-      last_sync_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
+  const { data: allActivityRows } = await db
+    .from("activities").select("strava_activity_id, distance_miles, run_date, sport_type").eq("user_id", userId);
+  const activitiesAfter: RunActivity[] = (allActivityRows ?? []).map((a) => ({
+    stravaActivityId: a.strava_activity_id, distanceMiles: a.distance_miles,
+    runDate: a.run_date, name: "", sportType: a.sport_type,
+  }));
+  const addedIds = new Set(newActivities.map((a) => a.stravaActivityId));
+  const activitiesBefore = activitiesAfter.filter((a) => !addedIds.has(a.stravaActivityId));
 
-  // Personal (user-scope) milestone awards — idempotent via unique constraint
-  for (const m of result.crossed) {
-    await db.from("milestone_awards").upsert(
-      {
-        scope: "user",
-        user_id: userId,
-        fellowship_id: user.fellowship_id,
-        landmark_id: m.landmarkId,
-      },
-      { onConflict: "scope,user_id,landmark_id", ignoreDuplicates: true }
-    );
-  }
+  const perFellowship = computeFellowshipTotals(fellowships, activitiesBefore, activitiesAfter, ROUTE);
 
-  // Fellowship-level crossings
-  const { data: members } = await db
-    .from("users")
-    .select("total_miles")
-    .eq("fellowship_id", user.fellowship_id);
-  const fellowshipMiles = (members ?? []).reduce(
-    (s: number, m: { total_miles: number | null }) => s + (m.total_miles ?? 0),
-    0
-  );
-  const priorFellowshipMiles =
-    fellowshipMiles -
-    result.newActivities.reduce((s, a) => s + a.distanceMiles, 0);
-  const fellowshipCrossed = crossedLandmarks(priorFellowshipMiles, fellowshipMiles, ROUTE);
+  const newBadges: { fellowshipId: string; fellowshipName: string; milestone: (typeof perFellowship)[number]["crossed"][number] }[] = [];
+  let responseTotalMiles = 0;
+  let responseFellowshipMiles = 0;
 
-  // Fellowship-scope milestone awards — check-before-insert to handle NULL user_id
-  // (Postgres treats NULLs as distinct in unique constraints, so ON CONFLICT would not
-  // deduplicate fellowship rows; we guard idempotency with an explicit existence check.)
-  for (const m of fellowshipCrossed) {
-    const { data: existingAward } = await db
-      .from("milestone_awards")
-      .select("id")
-      .eq("scope", "fellowship")
-      .eq("fellowship_id", user.fellowship_id)
-      .eq("landmark_id", m.landmarkId)
-      .maybeSingle();
-    if (!existingAward) {
-      await db.from("milestone_awards").insert({
-        scope: "fellowship",
-        user_id: null,
-        fellowship_id: user.fellowship_id,
-        landmark_id: m.landmarkId,
-      });
+  for (const result of perFellowship) {
+    const fellowship = fellowships.find((f) => f.id === result.fellowshipId)!;
+    if (fellowship.id === viewFellowshipId) responseTotalMiles = result.newTotalMiles;
+
+    for (const m of result.crossed) {
+      await db.from("milestone_awards").upsert(
+        { scope: "user", user_id: userId, fellowship_id: fellowship.id, landmark_id: m.landmarkId },
+        { onConflict: "scope,user_id,fellowship_id,landmark_id", ignoreDuplicates: true }
+      );
+      newBadges.push({ fellowshipId: fellowship.id, fellowshipName: fellowship.name, milestone: m });
+    }
+
+    // Fellowship-wide pooled total and crossings.
+    const { data: fellowshipMembers } = await db.from("fellowship_members").select("user_id").eq("fellowship_id", fellowship.id);
+    const memberIds = (fellowshipMembers ?? []).map((m: { user_id: string }) => m.user_id);
+    const { data: memberActivities } = await db
+      .from("activities").select("user_id, distance_miles, run_date, sport_type").in("user_id", memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"]);
+    const allMemberActivities: RunActivity[] = (memberActivities ?? []).map((a) => ({
+      stravaActivityId: 0, distanceMiles: a.distance_miles, runDate: a.run_date, name: "", sportType: a.sport_type,
+    }));
+    const pooledAfter = memberTotal(allMemberActivities, fellowship);
+    // The syncing user is always a member of every fellowship in this loop
+    // (fellowships came from their own memberships), and this endpoint only
+    // ever adds activities for that one user — so "before" is always the
+    // pooled total minus exactly what this sync just added.
+    const addedPooled = newActivities.reduce((s, a) => s + a.distanceMiles, 0);
+    const pooledBefore = pooledAfter - addedPooled;
+    if (fellowship.id === viewFellowshipId) responseFellowshipMiles = pooledAfter;
+
+    for (const m of crossedLandmarks(pooledBefore, pooledAfter, ROUTE)) {
+      const { data: existingAward } = await db
+        .from("milestone_awards").select("id")
+        .eq("scope", "fellowship").eq("fellowship_id", fellowship.id).eq("landmark_id", m.landmarkId).maybeSingle();
+      if (!existingAward) {
+        await db.from("milestone_awards").insert({ scope: "fellowship", user_id: null, fellowship_id: fellowship.id, landmark_id: m.landmarkId });
+        newBadges.push({ fellowshipId: fellowship.id, fellowshipName: fellowship.name, milestone: m });
+      }
     }
   }
-
-  const badgeMap = new Map<string, (typeof result.crossed)[number]>();
-  for (const m of result.crossed) badgeMap.set(m.landmarkId, m);
-  for (const m of fellowshipCrossed) if (!badgeMap.has(m.landmarkId)) badgeMap.set(m.landmarkId, m);
 
   return res.status(200).json({
-    importedCount: result.newActivities.length,
-    totalMiles: result.newTotalMiles,
-    fellowshipMiles,
-    newBadges: [...badgeMap.values()],
+    importedCount: newActivities.length,
+    totalMiles: responseTotalMiles,
+    fellowshipMiles: responseFellowshipMiles,
+    newBadges,
   });
 }
