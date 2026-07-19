@@ -28,12 +28,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: memberships } = await db
     .from("fellowship_members")
-    .select("fellowship:fellowship_id(id, name, start_date, allowed_activity_types)")
+    .select("fellowship:fellowship_id(id, name, start_date, allowed_activity_types, activity_multipliers)")
     .eq("user_id", userId);
   const fellowships: (Fellowship & { name: string })[] = (memberships ?? [])
-    .map((m) => m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[] } | null)
+    .map((m) => m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[]; activity_multipliers: unknown } | null)
     .filter((f): f is NonNullable<typeof f> => !!f)
-    .map((f) => ({ id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types }));
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      startDate: f.start_date,
+      allowedActivityTypes: f.allowed_activity_types,
+      activityMultipliers: (f.activity_multipliers as Record<string, number>) ?? {},
+    }));
   if (fellowships.length === 0) return res.status(500).json({ error: "no fellowship membership" });
 
   const appClientId = user.strava_client_id ?? getEnv("STRAVA_CLIENT_ID");
