@@ -296,13 +296,15 @@ body { margin: 0; }
   font-size: 14px; cursor: pointer; }
 .fellowship-select:focus { outline: none; border-color: #c0392b; }
 
-/* Globe toggle for Global view — sits just above the settings gear. Glows when active. */
+/* Globe toggle for Global view — sits just above the settings gear.
+   White glow like the gear/backpack; turns gold when Global view is active. */
 .globe-btn { position: absolute; right: 22px; bottom: 166px; z-index: 1000; width: 58px; height: 58px;
-  padding: 0; border: none; border-radius: 50%; background: transparent; cursor: pointer;
-  font-size: 34px; line-height: 58px; text-align: center;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); transition: transform 0.1s, box-shadow 0.15s; }
+  padding: 0; border: none; background: transparent; cursor: pointer; transition: transform 0.1s; }
 .globe-btn:hover { transform: translateY(-2px) scale(1.05); }
-.globe-btn.active { box-shadow: 0 0 0 2px #f0e2c0, 0 0 12px 3px #ffd54f; background: rgba(240,226,192,0.12); }
+.globe-btn img { width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff); }
+.globe-btn.active img {
+  filter: drop-shadow(0 0 2px #ffd54f) drop-shadow(0 0 3px #ffd54f) drop-shadow(0 0 6px #ffd54f); }
 
 /* Admin entry inside the settings modal — only rendered for admins. */
 .admin-link-btn { display: block; width: 100%; margin-top: 16px; background: #1d1710; color: #f0e2c0;

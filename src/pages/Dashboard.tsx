@@ -141,7 +141,7 @@ export default function Dashboard({
           aria-label="Toggle global view"
           aria-pressed={view === "global"}
         >
-          🌐
+          <img src="/globe.png" alt="Global view" />
         </button>
       )}
       {me && <Settings me={me} refresh={refresh} />}
