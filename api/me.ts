@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getServiceClient } from "./_lib/supabase.js";
 import { readSessionUserId } from "./_lib/http.js";
-import { memberTotal, activitiesForFellowship } from "../shared/fellowship-sync.js";
+import { memberTotal, activitiesForFellowship, multiplierFor } from "../shared/fellowship-sync.js";
 import type { Fellowship, RunActivity } from "../shared/types.js";
 
 // Longest run of consecutive week-buckets (weeks identified by floor(epoch / 7 days)).
@@ -15,22 +15,32 @@ function maxWeekStreak(weeks: Set<number>): number {
 // Shared stat formulas used for both fellowship-member cards and global-view ghosts,
 // so a ghost's card reads identically to a member's. `activities` must already be
 // scoped to the fellowship in question (see activitiesForFellowship).
-function computeStats(activities: RunActivity[]) {
-  let runs = 0, longest = 0, totalMiles = 0, sec = 0, secDist = 0;
+function computeStats(activities: RunActivity[], fellowship: Fellowship) {
+  let runs = 0, longest = 0, scaledTotal = 0, sec = 0, secDist = 0;
   const weeks = new Set<number>();
+  const typeCounts = new Map<string, number>();
   for (const a of activities) {
     runs++;
-    longest = Math.max(longest, a.distanceMiles);
-    totalMiles += a.distanceMiles;
-    if (a.movingSeconds != null) { sec += a.movingSeconds; secDist += a.distanceMiles; }
+    const mult = multiplierFor(fellowship, a.sportType);
+    const scaled = a.distanceMiles * mult;
+    longest = Math.max(longest, scaled);
+    scaledTotal += scaled;
+    if (a.movingSeconds != null) { sec += a.movingSeconds; secDist += a.distanceMiles; } // pace: RAW distance
     const t = a.runDate ? new Date(a.runDate).getTime() : NaN;
     if (!isNaN(t)) weeks.add(Math.floor(t / (7 * 86400000)));
+    typeCounts.set(a.sportType, (typeCounts.get(a.sportType) ?? 0) + 1);
+  }
+  let mostCommonActivity: string | null = null;
+  let best = 0;
+  for (const [type, count] of typeCounts) {
+    if (count > best) { best = count; mostCommonActivity = type; }
   }
   return {
     runs, longestMiles: longest,
-    avgMiles: runs ? totalMiles / runs : 0,
+    avgMiles: runs ? scaledTotal / runs : 0,
     avgPaceSecPerMile: secDist > 0 ? sec / secDist : null,
     weekStreak: maxWeekStreak(weeks),
+    mostCommonActivity,
   };
 }
 
@@ -52,12 +62,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: memberships } = await db
     .from("fellowship_members")
-    .select("joined_at, fellowship:fellowship_id(id, name, start_date, allowed_activity_types)")
+    .select("joined_at, fellowship:fellowship_id(id, name, start_date, allowed_activity_types, activity_multipliers)")
     .eq("user_id", userId).order("joined_at", { ascending: true });
   const myFellowships: Fellowship[] = (memberships ?? [])
-    .map((m) => m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[] } | null)
+    .map((m) => m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[]; activity_multipliers: unknown } | null)
     .filter((f): f is NonNullable<typeof f> => !!f)
-    .map((f) => ({ id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types }));
+    .map((f) => ({
+      id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types,
+      activityMultipliers: (f.activity_multipliers as Record<string, number>) ?? {},
+    }));
   if (myFellowships.length === 0) return res.status(500).json({ error: "no fellowship membership" });
   const fellowshipsSummary = myFellowships.map((f) => ({ id: f.id, name: f.name }));
 
@@ -66,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (view === "global") {
     const { data: allMemberships } = await db
       .from("fellowship_members")
-      .select("user_id, fellowship:fellowship_id(id, name, start_date, allowed_activity_types)");
+      .select("user_id, fellowship:fellowship_id(id, name, start_date, allowed_activity_types, activity_multipliers)");
     const { data: allUsers } = await db.from("users").select("id, display_name, chosen_character, color, opened_quests");
     const usersById = new Map((allUsers ?? []).map((u) => [u.id, u]));
 
@@ -76,10 +89,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       stats: ReturnType<typeof computeStats>; openedQuests: string[];
     }[] = [];
     for (const m of allMemberships ?? []) {
-      const f = m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[] } | null;
+      const f = m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[]; activity_multipliers: unknown } | null;
       const u = usersById.get(m.user_id);
       if (!f || !u) continue;
-      const fellowship: Fellowship = { id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types };
+      const fellowship: Fellowship = {
+        id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types,
+        activityMultipliers: (f.activity_multipliers as Record<string, number>) ?? {},
+      };
       const { data: acts } = await db
         .from("activities").select("distance_miles, moving_seconds, run_date, name, sport_type")
         .eq("user_id", u.id);
@@ -92,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         userId: u.id, fellowshipId: f.id, fellowshipName: f.name,
         displayName: u.display_name, chosenCharacter: u.chosen_character, color: u.color,
         totalMiles: memberTotal(activities, fellowship),
-        stats: computeStats(scoped),
+        stats: computeStats(scoped, fellowship),
         openedQuests: slice(u.opened_quests, f.id),
       });
     }
@@ -141,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: m.id, displayName: m.display_name, chosenCharacter: m.chosen_character, color: m.color,
       totalMiles: memberTotal(memberActivities, fellowship),
       openedQuests: slice(m.opened_quests, fellowship.id),
-      stats: computeStats(memberActivities),
+      stats: computeStats(memberActivities, fellowship),
       activities: (rawByUser.get(m.id) ?? []).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")),
     };
   });
