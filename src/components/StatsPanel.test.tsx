@@ -28,25 +28,25 @@ describe("nextLandmark", () => {
 
 describe("StatsPanel", () => {
   it("shows both personal and fellowship percentages", () => {
-    render(<StatsPanel me={me} onSync={() => {}} syncing={false} onSelectMember={() => {}} />);
+    render(<StatsPanel me={me} onSync={() => {}} syncing={false} onSelectMember={() => {}} fellowships={me.fellowships} fellowshipId="f1" onSelectFellowship={() => {}} />);
     // personal: 458/1779 ≈ 25.7% ; fellowship: 658/1779 ≈ 37.0%
     expect(screen.getByText(/25\.7%/)).toBeInTheDocument();
     expect(screen.getByText(/37\.0%/)).toBeInTheDocument();
   });
   it("lists members sorted by miles", () => {
-    render(<StatsPanel me={me} onSync={() => {}} syncing={false} onSelectMember={() => {}} />);
+    render(<StatsPanel me={me} onSync={() => {}} syncing={false} onSelectMember={() => {}} fellowships={me.fellowships} fellowshipId="f1" onSelectFellowship={() => {}} />);
     const rows = screen.getAllByTestId("leader-row");
     expect(rows[0]).toHaveTextContent("Davis");
     expect(rows[1]).toHaveTextContent("Sam");
   });
   it("fires onSync when the button is clicked", () => {
     const onSync = vi.fn();
-    render(<StatsPanel me={me} onSync={onSync} syncing={false} onSelectMember={() => {}} />);
+    render(<StatsPanel me={me} onSync={onSync} syncing={false} onSelectMember={() => {}} fellowships={me.fellowships} fellowshipId="f1" onSelectFellowship={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /sync/i }));
     expect(onSync).toHaveBeenCalled();
   });
   it("toggles the detail lens between Me and Fellowship", () => {
-    render(<StatsPanel me={me} onSync={() => {}} syncing={false} onSelectMember={() => {}} />);
+    render(<StatsPanel me={me} onSync={() => {}} syncing={false} onSelectMember={() => {}} fellowships={me.fellowships} fellowshipId="f1" onSelectFellowship={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /fellowship/i }));
     // fellowship at 658 mi -> next landmark still Moria (800), distance 142
     expect(screen.getByTestId("next-landmark")).toHaveTextContent(/142/);

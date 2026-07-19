@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MeResponse } from "../api-client";
+import type { MeResponse, FellowshipSummary } from "../api-client";
 import { ROUTE, TOTAL_MILES } from "../../shared/route";
 import { percentComplete } from "../../shared/progress";
 import { DEFAULT_COLOR } from "../../shared/characters";
@@ -20,6 +20,9 @@ export function StatsPanel({
   onSelectMember,
   collapsed: collapsedProp,
   onCollapsedChange,
+  fellowships,
+  fellowshipId,
+  onSelectFellowship,
 }: {
   me: MeResponse;
   onSync: () => void;
@@ -27,6 +30,9 @@ export function StatsPanel({
   onSelectMember: (id: string) => void;
   collapsed?: boolean;
   onCollapsedChange?: (v: boolean) => void;
+  fellowships: FellowshipSummary[];
+  fellowshipId: string | undefined;
+  onSelectFellowship: (id: string) => void;
 }) {
   const [lens, setLens] = useState<"me" | "fellowship">("me");
   const [internalCollapsed, setInternalCollapsed] = useState(false);
@@ -71,6 +77,20 @@ export function StatsPanel({
           {collapsed ? "⤢" : "▾"}
         </button>
       </div>
+
+      {fellowships.length > 1 && (
+        <select
+          className="fellowship-select"
+          value={fellowshipId ?? ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => onSelectFellowship(e.target.value)}
+          aria-label="Choose fellowship"
+        >
+          {fellowships.map((f) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
+      )}
 
       <div className="headline">
         <div className={lens === "me" ? "hl active" : "hl"}>

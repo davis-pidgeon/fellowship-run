@@ -14,7 +14,6 @@ import { ProfilePopover, ClusterPicker, type ProfileTarget, type ClusterTarget }
 import { ProfileDetail } from "../components/ProfileDetail";
 import type { Member } from "../api-client";
 import type { SideQuest } from "../../shared/sidequests";
-import { FellowshipSwitcher } from "../components/FellowshipSwitcher";
 import type { DashboardView } from "../useSession";
 
 export default function Dashboard({
@@ -91,25 +90,18 @@ export default function Dashboard({
 
   return (
     <div className="dashboard">
-      <FellowshipSwitcher
-        fellowships={(view === "global" ? globalData?.fellowships : me?.fellowships) ?? []}
-        fellowshipId={fellowshipId}
-        view={view}
-        onSelect={(id) => { setFellowshipId(id); setView("fellowship"); }}
-        onGlobal={() => setView("global")}
-      />
       <MapView
-        members={view === "global" ? [] : me?.members ?? []}
-        fellowshipMiles={view === "global" ? 0 : me?.fellowshipMiles ?? 0}
-        ghosts={view === "global" ? globalData?.ghosts : undefined}
+        members={me?.members ?? []}
+        fellowshipMiles={me?.fellowshipMiles ?? 0}
+        ghosts={view === "global" ? (globalData?.ghosts ?? []).filter((g) => g.fellowshipId !== fellowshipId) : undefined}
         focus={focus}
-        myMiles={view === "global" ? 0 : me?.user.totalMiles ?? 0}
+        myMiles={me?.user.totalMiles ?? 0}
         onOpenQuest={openQuest}
         onNavigate={() => setPanelCollapsed(true)}
         openedQuestIds={openedQuests}
         onSelectRunner={onSelectRunner}
       />
-      {view === "fellowship" && me && (
+      {me && (
         <StatsPanel
           me={me}
           onSync={onSync}
@@ -117,10 +109,24 @@ export default function Dashboard({
           onSelectMember={(id) => setFocus({ id, nonce: Date.now() })}
           collapsed={panelCollapsed}
           onCollapsedChange={setPanelCollapsed}
+          fellowships={me.fellowships}
+          fellowshipId={fellowshipId}
+          onSelectFellowship={(id) => { setFellowshipId(id); setView("fellowship"); }}
         />
       )}
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
       {me && <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />}
+      {me && (
+        <button
+          className={"globe-btn" + (view === "global" ? " active" : "")}
+          onClick={() => setView(view === "global" ? "fellowship" : "global")}
+          title={view === "global" ? "Back to your fellowship" : "Global view"}
+          aria-label="Toggle global view"
+          aria-pressed={view === "global"}
+        >
+          🌐
+        </button>
+      )}
       {me && <Settings me={me} refresh={refresh} />}
       <QuestNote quest={quest} onClose={() => setQuest(null)} />
       <ProfilePopover
