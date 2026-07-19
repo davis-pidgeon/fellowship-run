@@ -6,6 +6,7 @@ import {
   canRemoveMembership,
   newActivitiesOnly,
   computeFellowshipTotals,
+  activitiesForFellowship,
 } from "./fellowship-sync";
 import type { RunActivity, Waypoint, Fellowship } from "./types";
 
@@ -89,5 +90,21 @@ describe("computeFellowshipTotals", () => {
     expect(results.map((r) => r.fellowshipId)).toEqual(["f-a", "f-b"]);
     expect(results[0].crossed.map((m) => m.landmarkId)).toEqual(["l1"]);
     expect(results[1].crossed.map((m) => m.landmarkId)).toEqual(["l1"]);
+  });
+});
+
+describe("activitiesForFellowship", () => {
+  it("keeps only activities matching the fellowship's type and date floor", () => {
+    const activities = [
+      run(1, 3, "2026-07-05T00:00:00Z", "Run"),      // ok
+      run(2, 4, "2026-06-15T00:00:00Z", "Run"),      // before start_date — excluded
+      run(3, 5, "2026-07-06T00:00:00Z", "Ride"),     // wrong type — excluded
+      run(4, 2, "2026-07-07T00:00:00Z", "TrailRun"), // ok
+    ];
+    expect(activitiesForFellowship(activities, runningFellowship).map((a) => a.stravaActivityId))
+      .toEqual([1, 4]);
+  });
+  it("returns an empty list when nothing matches", () => {
+    expect(activitiesForFellowship([], runningFellowship)).toEqual([]);
   });
 });

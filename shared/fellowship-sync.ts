@@ -1,12 +1,14 @@
 import type { RunActivity, Waypoint, Milestone, Fellowship } from "./types.js";
 import { crossedLandmarks } from "./milestones.js";
 
-export function memberTotal(activities: RunActivity[], fellowship: Fellowship): number {
+export function activitiesForFellowship(activities: RunActivity[], fellowship: Fellowship): RunActivity[] {
   const floor = new Date(fellowship.startDate).getTime();
   const allowed = new Set(fellowship.allowedActivityTypes);
-  return activities
-    .filter((a) => allowed.has(a.sportType) && new Date(a.runDate).getTime() >= floor)
-    .reduce((sum, a) => sum + a.distanceMiles, 0);
+  return activities.filter((a) => allowed.has(a.sportType) && new Date(a.runDate).getTime() >= floor);
+}
+
+export function memberTotal(activities: RunActivity[], fellowship: Fellowship): number {
+  return activitiesForFellowship(activities, fellowship).reduce((sum, a) => sum + a.distanceMiles, 0);
 }
 
 export function earliestStartDate(fellowships: Fellowship[]): string {
