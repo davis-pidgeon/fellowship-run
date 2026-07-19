@@ -41,6 +41,7 @@ export interface Fellowship {
   name: string;
   startDate: string; // ISO date, e.g. "2026-07-01"
   allowedActivityTypes: string[];
+  activityMultipliers?: Record<string, number>; // { [sportType]: multiplier }; absent => 1.0
 }
 
 export interface FellowshipBadge {

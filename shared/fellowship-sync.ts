@@ -7,8 +7,13 @@ export function activitiesForFellowship(activities: RunActivity[], fellowship: F
   return activities.filter((a) => allowed.has(a.sportType) && new Date(a.runDate).getTime() >= floor);
 }
 
+export function multiplierFor(fellowship: Fellowship, sportType: string): number {
+  return fellowship.activityMultipliers?.[sportType] ?? 1;
+}
+
 export function memberTotal(activities: RunActivity[], fellowship: Fellowship): number {
-  return activitiesForFellowship(activities, fellowship).reduce((sum, a) => sum + a.distanceMiles, 0);
+  return activitiesForFellowship(activities, fellowship)
+    .reduce((sum, a) => sum + a.distanceMiles * multiplierFor(fellowship, a.sportType), 0);
 }
 
 export function earliestStartDate(fellowships: Fellowship[]): string {

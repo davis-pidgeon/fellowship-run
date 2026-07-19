@@ -7,6 +7,7 @@ import {
   newActivitiesOnly,
   computeFellowshipTotals,
   activitiesForFellowship,
+  multiplierFor,
 } from "./fellowship-sync";
 import type { RunActivity, Waypoint, Fellowship } from "./types";
 
@@ -106,5 +107,33 @@ describe("activitiesForFellowship", () => {
   });
   it("returns an empty list when nothing matches", () => {
     expect(activitiesForFellowship([], runningFellowship)).toEqual([]);
+  });
+});
+
+describe("multiplierFor", () => {
+  it("returns the configured multiplier for a type", () => {
+    const f: Fellowship = { ...runningFellowship, activityMultipliers: { Run: 2.5, TrailRun: 0.5 } };
+    expect(multiplierFor(f, "Run")).toBe(2.5);
+    expect(multiplierFor(f, "TrailRun")).toBe(0.5);
+  });
+  it("defaults to 1 for types with no multiplier or no map", () => {
+    expect(multiplierFor(runningFellowship, "Run")).toBe(1);
+    const f: Fellowship = { ...runningFellowship, activityMultipliers: { Run: 2.5 } };
+    expect(multiplierFor(f, "TrailRun")).toBe(1);
+  });
+});
+
+describe("memberTotal with multipliers", () => {
+  it("scales each activity's distance by its type multiplier", () => {
+    const f: Fellowship = { ...runningFellowship, activityMultipliers: { Run: 2, TrailRun: 0.5 } };
+    const activities = [
+      run(1, 3, "2026-07-05T00:00:00Z", "Run"),      // 3 * 2 = 6
+      run(2, 4, "2026-07-06T00:00:00Z", "TrailRun"), // 4 * 0.5 = 2
+    ];
+    expect(memberTotal(activities, f)).toBe(8);
+  });
+  it("treats a missing multiplier as 1", () => {
+    const activities = [run(1, 5, "2026-07-05T00:00:00Z", "Run")];
+    expect(memberTotal(activities, runningFellowship)).toBe(5);
   });
 });
