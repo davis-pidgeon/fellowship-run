@@ -48,7 +48,7 @@ export default function Dashboard({
     setQuest(q);
     if (!openedQuests.includes(q.id)) {
       setOpenedQuests((prev) => [...prev, q.id]); // optimistic
-      api.questOpen(q.id).catch(() => {}); // persist; transient failures are non-fatal
+      if (fellowshipId) api.questOpen(q.id, fellowshipId).catch(() => {}); // persist; transient failures are non-fatal
     }
   };
 
@@ -66,11 +66,11 @@ export default function Dashboard({
     const fresh = earned.filter((a) => !notifiedRef.current.has(a.id));
     if (fresh.length) {
       fresh.forEach((a) => notifiedRef.current.add(a.id));
-      api.achievementsSeen(fresh.map((a) => a.id)).catch(() => {});
+      if (fellowshipId) api.achievementsSeen(fresh.map((a) => a.id), fellowshipId).catch(() => {});
       if (seededRef.current) setToasts((prev) => [...prev, ...fresh]);
     }
     seededRef.current = true;
-  }, [me, openedQuests]);
+  }, [me, openedQuests, fellowshipId]);
 
   const onSync = async () => {
     if (!fellowshipId) return;

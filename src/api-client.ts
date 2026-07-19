@@ -97,17 +97,17 @@ export const api = {
     fetch("/api/me?view=global", { credentials: "include" }).then((r) => (r.status === 401 ? null : json<GlobalResponse>(r))),
   sync: (fellowshipId: string) =>
     fetch(`/api/sync?fellowshipId=${encodeURIComponent(fellowshipId)}`, { method: "POST", credentials: "include" }).then(json<SyncResponse>),
-  questOpen: (questId: string) =>
+  questOpen: (questId: string, fellowshipId: string) =>
     fetch("/api/quest-open", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questId }),
+      body: JSON.stringify({ questId, fellowshipId }),
     }).then(json<{ openedQuests: string[] }>),
-  achievementsSeen: (ids: string[]) =>
+  achievementsSeen: (ids: string[], fellowshipId: string) =>
     fetch("/api/achievements-seen", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ ids, fellowshipId }),
     }).then(json<{ notifiedAchievements: string[] }>),
   chooseCharacter: (character: CharacterKey, color: string) =>
     fetch("/api/character", {
