@@ -12,15 +12,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body ?? {};
   const ids: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
   if (!ids.length) return res.status(400).json({ error: "ids required" });
+  const fellowshipId = body?.fellowshipId as string | undefined;
+  if (!fellowshipId) return res.status(400).json({ error: "fellowshipId required" });
 
   const db = getServiceClient();
   const { data: user } = await db.from("users").select("notified_achievements").eq("id", userId).maybeSingle();
   if (!user) return res.status(401).json({ error: "unauthenticated" });
 
-  const current: string[] = Array.isArray(user.notified_achievements) ? user.notified_achievements : [];
+  const all = (user?.notified_achievements && typeof user.notified_achievements === "object" && !Array.isArray(user.notified_achievements))
+    ? user.notified_achievements as Record<string, string[]> : {};
+  const current: string[] = Array.isArray(all[fellowshipId]) ? all[fellowshipId] : [];
   const notifiedAchievements = [...new Set([...current, ...ids])];
   if (notifiedAchievements.length !== current.length) {
-    await db.from("users").update({ notified_achievements: notifiedAchievements }).eq("id", userId);
+    await db.from("users").update({ notified_achievements: { ...all, [fellowshipId]: notifiedAchievements } }).eq("id", userId);
   }
   return res.status(200).json({ notifiedAchievements });
 }

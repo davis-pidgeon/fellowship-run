@@ -8,6 +8,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = await readSessionUserId(req);
   if (!userId) return res.status(401).json({ error: "unauthenticated" });
 
+  const slice = (col: unknown, fid: string): string[] => {
+    const obj = (col && typeof col === "object" && !Array.isArray(col)) ? col as Record<string, unknown> : {};
+    return Array.isArray(obj[fid]) ? (obj[fid] as string[]) : [];
+  };
+
   const db = getServiceClient();
   const { data: user } = await db
     .from("users")
@@ -114,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return {
       id: m.id, displayName: m.display_name, chosenCharacter: m.chosen_character, color: m.color,
       totalMiles,
-      openedQuests: Array.isArray(m.opened_quests) ? m.opened_quests : [],
+      openedQuests: slice(m.opened_quests, fellowship.id),
       stats: {
         runs: s?.runs ?? 0, longestMiles: s?.longest ?? 0,
         avgMiles: s && s.runs ? memberActivities.reduce((sum, a) => sum + a.distanceMiles, 0) / s.runs : 0,
@@ -137,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     fellowship: { id: fellowship.id, name: fellowship.name },
     members: memberList,
     fellowshipMiles,
-    openedQuests: Array.isArray(user.opened_quests) ? user.opened_quests : [],
-    notifiedAchievements: Array.isArray(user.notified_achievements) ? user.notified_achievements : [],
+    openedQuests: slice(user.opened_quests, fellowship.id),
+    notifiedAchievements: slice(user.notified_achievements, fellowship.id),
   });
 }
