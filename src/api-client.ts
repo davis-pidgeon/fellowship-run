@@ -21,6 +21,7 @@ export interface Member {
   openedQuests: string[];
   stats: RunStats;
   activities: RecentActivity[];
+  fellowshipName?: string; // shown on the player card; the fellowship the card is viewed within
 }
 export interface FellowshipSummary {
   id: string;

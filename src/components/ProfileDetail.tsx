@@ -6,7 +6,6 @@ import { percentComplete } from "../../shared/progress";
 import { SIDE_QUESTS, ARCS, type QuestArc } from "../../shared/sidequests";
 import { fmtPace, latestLandmark, latestNoteTitle } from "./ProfilePopover";
 import { computeAchievements } from "../achievements";
-import { ACTIVITY_TYPES } from "../../shared/activity-types";
 
 type Tab = "stats" | "achievements" | "collection" | "sayings";
 const TABS: { key: Tab; label: string }[] = [
@@ -22,9 +21,6 @@ function spriteFor(character: string | null): string {
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-function activityLabel(key: string | null): string {
-  return key ? (ACTIVITY_TYPES.find((t) => t.key === key)?.label ?? key) : "—";
 }
 
 // A speech bubble above the profile sprite that cycles through ALL of the
@@ -62,7 +58,6 @@ export function ProfileDetail({ member, onClose }: { member: Member | null; onCl
     ["Avg pace", fmtPace(s.avgPaceSecPerMile)],
     ["Longest run", s.longestMiles ? `${s.longestMiles.toFixed(1)} mi` : "—"],
     ["Avg / run", s.avgMiles ? `${s.avgMiles.toFixed(1)} mi` : "—"],
-    ["Most common", activityLabel(s.mostCommonActivity)],
   ];
   const right: [string, string][] = [
     ["Total miles", `${member.totalMiles.toFixed(1)}`],
@@ -106,6 +101,7 @@ export function ProfileDetail({ member, onClose }: { member: Member | null; onCl
               <StatSpeechBubble activities={member.activities} />
               <img className="pd-sprite" src={spriteFor(member.chosenCharacter)} alt={member.displayName}
                 style={{ filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 6px ${color})` }} />
+              {member.fellowshipName && <div className="pd-fellowship">{member.fellowshipName}</div>}
               <div className="pd-progress"><div className="pd-progress-fill" style={{ width: `${pct}%`, background: color }} /></div>
               <div className="pd-progress-label">{member.totalMiles.toFixed(1)} / {TOTAL_MILES} mi</div>
             </div>

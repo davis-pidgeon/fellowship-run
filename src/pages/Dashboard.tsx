@@ -29,6 +29,7 @@ function ghostToMember(ghost: Ghost): Member {
     openedQuests: ghost.openedQuests,
     stats: ghost.stats,
     activities: [],
+    fellowshipName: ghost.fellowshipName,
   };
 }
 
@@ -149,7 +150,7 @@ export default function Dashboard({
       <ProfilePopover
         target={profile}
         onClose={() => setProfile(null)}
-        onViewDetails={(m) => { setProfile(null); setProfileDetail(m); }}
+        onViewDetails={(m) => { setProfile(null); setProfileDetail({ ...m, fellowshipName: me?.fellowship.name }); }}
       />
       <ClusterPicker
         target={cluster}
