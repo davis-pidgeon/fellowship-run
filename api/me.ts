@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getServiceClient } from "./_lib/supabase.js";
 import { readSessionUserId } from "./_lib/http.js";
-import { memberTotal } from "../shared/fellowship-sync.js";
+import { memberTotal, activitiesForFellowship } from "../shared/fellowship-sync.js";
 import type { Fellowship, RunActivity } from "../shared/types.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -72,22 +72,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const activitiesByUser = new Map<string, RunActivity[]>();
   const rawByUser = new Map<string, { name: string; date: string }[]>();
   const secByUser = new Map<string, { runs: number; longest: number; sec: number; secDist: number; weeks: Set<number> }>();
+  // Group raw rows by user first.
+  type ActRow = NonNullable<typeof acts>[number];
+  const rowsByUser = new Map<string, ActRow[]>();
   for (const a of acts ?? []) {
-    const list = activitiesByUser.get(a.user_id) ?? [];
-    list.push({ stravaActivityId: 0, distanceMiles: a.distance_miles ?? 0, runDate: a.run_date, name: a.name ?? "", sportType: a.sport_type });
-    activitiesByUser.set(a.user_id, list);
-
-    const s = secByUser.get(a.user_id) ?? { runs: 0, longest: 0, sec: 0, secDist: 0, weeks: new Set<number>() };
-    const d = a.distance_miles ?? 0;
-    s.runs++; s.longest = Math.max(s.longest, d);
-    if (a.moving_seconds != null) { s.sec += a.moving_seconds; s.secDist += d; }
-    const t = a.run_date ? new Date(a.run_date).getTime() : NaN;
-    if (!isNaN(t)) s.weeks.add(Math.floor(t / (7 * 86400000)));
-    secByUser.set(a.user_id, s);
-
-    const rawList = rawByUser.get(a.user_id) ?? [];
-    rawList.push({ name: a.name ?? "Untitled run", date: a.run_date });
-    rawByUser.set(a.user_id, rawList);
+    const list = rowsByUser.get(a.user_id) ?? [];
+    list.push(a);
+    rowsByUser.set(a.user_id, list);
+  }
+  // Then compute stats/sayings from ONLY the activities that count for THIS fellowship.
+  for (const [uid, rows] of rowsByUser) {
+    const scoped = activitiesForFellowship(
+      rows.map((a) => ({ stravaActivityId: 0, distanceMiles: a.distance_miles ?? 0,
+        runDate: a.run_date, name: a.name ?? "", sportType: a.sport_type, movingSeconds: a.moving_seconds ?? undefined })),
+      fellowship
+    );
+    activitiesByUser.set(uid, scoped);
+    const s = { runs: 0, longest: 0, sec: 0, secDist: 0, weeks: new Set<number>() };
+    const raw: { name: string; date: string }[] = [];
+    for (const a of scoped) {
+      s.runs++; s.longest = Math.max(s.longest, a.distanceMiles);
+      if (a.movingSeconds != null) { s.sec += a.movingSeconds; s.secDist += a.distanceMiles; }
+      const t = a.runDate ? new Date(a.runDate).getTime() : NaN;
+      if (!isNaN(t)) s.weeks.add(Math.floor(t / (7 * 86400000)));
+      raw.push({ name: a.name || "Untitled run", date: a.runDate });
+    }
+    secByUser.set(uid, s);
+    rawByUser.set(uid, raw);
   }
   const maxWeekStreak = (weeks: Set<number>): number => {
     const arr = [...weeks].sort((a, b) => a - b);
