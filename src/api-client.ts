@@ -6,6 +6,7 @@ export interface RunStats {
   avgMiles: number;
   avgPaceSecPerMile: number | null;
   weekStreak: number;
+  mostCommonActivity: string | null;
 }
 export interface RecentActivity {
   name: string;

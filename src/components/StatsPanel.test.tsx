@@ -9,8 +9,8 @@ const me: MeResponse = {
   fellowships: [{ id: "f1", name: "The Fellowship" }],
   fellowship: { id: "f1", name: "The Fellowship" },
   members: [
-    { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 }, activities: [] },
-    { id: "u2", displayName: "Sam", chosenCharacter: "frodo", color: "#1e88e5", totalMiles: 200, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 }, activities: [] },
+    { id: "u1", displayName: "Davis", chosenCharacter: "aragorn", color: "#e53935", totalMiles: 458, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0, mostCommonActivity: null }, activities: [] },
+    { id: "u2", displayName: "Sam", chosenCharacter: "frodo", color: "#1e88e5", totalMiles: 200, openedQuests: [], stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0, mostCommonActivity: null }, activities: [] },
   ],
   fellowshipMiles: 658,
   openedQuests: [],
