@@ -43,6 +43,8 @@ export interface Ghost {
   chosenCharacter: CharacterKey | null;
   color: string | null;
   totalMiles: number;
+  stats: Member["stats"];
+  openedQuests: string[];
 }
 export interface GlobalResponse {
   user: MeResponse["user"];
