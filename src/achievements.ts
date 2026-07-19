@@ -86,6 +86,6 @@ export function computeAchievements(m: Member): EarnedAchievement[] {
 export const ACHIEVEMENTS_BY_ID: Record<string, Achievement> = Object.fromEntries(
   computeAchievements({
     totalMiles: 0, openedQuests: [],
-    stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0 },
+    stats: { runs: 0, longestMiles: 0, avgMiles: 0, avgPaceSecPerMile: null, weekStreak: 0, mostCommonActivity: null },
   } as unknown as Member).map((a) => [a.id, { id: a.id, icon: a.icon, name: a.name, description: a.description }])
 );

@@ -12,15 +12,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body ?? {};
   const questId = String(body.questId ?? "");
   if (!questId) return res.status(400).json({ error: "questId required" });
+  const fellowshipId = body?.fellowshipId as string | undefined;
+  if (!fellowshipId) return res.status(400).json({ error: "fellowshipId required" });
 
   const db = getServiceClient();
   const { data: user } = await db.from("users").select("opened_quests").eq("id", userId).maybeSingle();
   if (!user) return res.status(401).json({ error: "unauthenticated" });
 
-  const current: string[] = Array.isArray(user.opened_quests) ? user.opened_quests : [];
+  const all = (user?.opened_quests && typeof user.opened_quests === "object" && !Array.isArray(user.opened_quests))
+    ? user.opened_quests as Record<string, string[]> : {};
+  const current: string[] = Array.isArray(all[fellowshipId]) ? all[fellowshipId] : [];
   const openedQuests = current.includes(questId) ? current : [...current, questId];
   if (openedQuests.length !== current.length) {
-    await db.from("users").update({ opened_quests: openedQuests }).eq("id", userId);
+    await db.from("users").update({ opened_quests: { ...all, [fellowshipId]: openedQuests } }).eq("id", userId);
   }
   return res.status(200).json({ openedQuests });
 }

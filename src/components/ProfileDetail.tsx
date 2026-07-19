@@ -101,6 +101,7 @@ export function ProfileDetail({ member, onClose }: { member: Member | null; onCl
               <StatSpeechBubble activities={member.activities} />
               <img className="pd-sprite" src={spriteFor(member.chosenCharacter)} alt={member.displayName}
                 style={{ filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 6px ${color})` }} />
+              {member.fellowshipName && <div className="pd-fellowship">{member.fellowshipName}</div>}
               <div className="pd-progress"><div className="pd-progress-fill" style={{ width: `${pct}%`, background: color }} /></div>
               <div className="pd-progress-label">{member.totalMiles.toFixed(1)} / {TOTAL_MILES} mi</div>
             </div>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import L from "leaflet";
 import type { Member } from "../api-client";
+import type { Ghost } from "../api-client";
 import { positionForMiles } from "../../shared/progress";
 import { ROUTE as ROUTE_WAYPOINTS } from "../../shared/route";
 import { CHARACTERS, DEFAULT_COLOR } from "../../shared/characters";
@@ -93,6 +94,36 @@ function RunnerOverlay({ member, miles, offsetX, onSelect, cluster }: { member: 
           const p = map.latLngToContainerPoint(e.latlng);
           onSelect(cluster, { x: p.x, y: p.y });
         },
+      }}
+    />
+  );
+}
+
+function GhostOverlay({ ghost, onSelect }: { ghost: Ghost; onSelect?: (ghost: Ghost) => void }) {
+  const p = positionForMiles(ghost.totalMiles, ROUTE_WAYPOINTS);
+  const lat = latFor(p.y);
+  const footLat = lat - FOOT_FRAC * CHAR_H;
+  const overlayBounds: L.LatLngBoundsExpression = [
+    [footLat, p.x - CHAR_W / 2],
+    [footLat + CHAR_H, p.x + CHAR_W / 2],
+  ];
+  return (
+    <ImageOverlay
+      url={spriteFor(ghost.chosenCharacter)}
+      bounds={overlayBounds}
+      zIndex={600}
+      interactive
+      eventHandlers={{
+        add: (e) => {
+          const el = (e.target as L.ImageOverlay).getElement();
+          if (el) {
+            el.style.imageRendering = "pixelated";
+            el.style.opacity = "0.6";
+            el.style.filter = `drop-shadow(0 0 4px ${ghost.color ?? "#fff"}) drop-shadow(0 0 6px ${ghost.color ?? "#fff"})`;
+            el.style.cursor = "pointer";
+          }
+        },
+        click: () => onSelect?.(ghost),
       }}
     />
   );
@@ -233,6 +264,8 @@ export function MapView({
   onNavigate,
   openedQuestIds,
   onSelectRunner,
+  ghosts,
+  onSelectGhost,
 }: {
   members: Member[];
   fellowshipMiles: number;
@@ -242,6 +275,8 @@ export function MapView({
   onNavigate: () => void;
   openedQuestIds: string[];
   onSelectRunner: (members: Member[], pt: { x: number; y: number }) => void;
+  ghosts?: Ghost[];
+  onSelectGhost?: (ghost: Ghost) => void;
 }) {
   const [t, setT] = useState(0);
   const [following, setFollowing] = useState(true);
@@ -340,6 +375,8 @@ export function MapView({
       {members.map((m, i) => (
         <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} onSelect={onSelectRunner} cluster={clusterFor(i)} />
       ))}
+
+      {ghosts?.map((g) => <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} onSelect={onSelectGhost} />)}
 
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />

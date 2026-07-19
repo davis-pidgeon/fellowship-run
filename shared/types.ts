@@ -19,6 +19,7 @@ export interface RunActivity {
   runDate: string; // ISO 8601
   name: string;
   movingSeconds?: number; // Strava moving_time, for pace; optional for older data
+  sportType: string; // Strava's activity type, e.g. "Run", "Walk", "Ride"
 }
 
 export interface Position {
@@ -33,4 +34,18 @@ export interface Milestone {
   message: string;
   lore: string;
   cumulativeMiles: number;
+}
+
+export interface Fellowship {
+  id: string;
+  name: string;
+  startDate: string; // ISO date, e.g. "2026-07-01"
+  allowedActivityTypes: string[];
+  activityMultipliers?: Record<string, number>; // { [sportType]: multiplier }; absent => 1.0
+}
+
+export interface FellowshipBadge {
+  fellowshipId: string;
+  fellowshipName: string;
+  milestone: Milestone;
 }

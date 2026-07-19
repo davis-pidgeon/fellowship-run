@@ -1,15 +1,16 @@
-import type { CharacterKey, Milestone } from "../shared/types";
+import type { CharacterKey, FellowshipBadge } from "../shared/types";
 
 export interface RunStats {
   runs: number;
   longestMiles: number;
   avgMiles: number;
-  avgPaceSecPerMile: number | null; // null until a run with duration is synced
-  weekStreak: number; // longest run of consecutive weeks with a run
+  avgPaceSecPerMile: number | null;
+  weekStreak: number;
+  mostCommonActivity: string | null;
 }
 export interface RecentActivity {
   name: string;
-  date: string; // ISO
+  date: string;
 }
 export interface Member {
   id: string;
@@ -19,21 +20,61 @@ export interface Member {
   totalMiles: number;
   openedQuests: string[];
   stats: RunStats;
-  activities: RecentActivity[]; // all, newest first (names = the character's sayings)
+  activities: RecentActivity[];
+  fellowshipName?: string; // shown on the player card; the fellowship the card is viewed within
+}
+export interface FellowshipSummary {
+  id: string;
+  name: string;
 }
 export interface MeResponse {
   user: { id: string; displayName: string; avatarUrl: string | null; chosenCharacter: CharacterKey | null; color: string | null; totalMiles: number };
-  fellowship: { id: string; name: string };
+  isAdmin: boolean;
+  fellowships: FellowshipSummary[];
+  fellowship: FellowshipSummary;
   members: Member[];
   fellowshipMiles: number;
   openedQuests: string[];
   notifiedAchievements: string[];
 }
+export interface Ghost {
+  userId: string;
+  fellowshipId: string;
+  fellowshipName: string;
+  displayName: string;
+  chosenCharacter: CharacterKey | null;
+  color: string | null;
+  totalMiles: number;
+  stats: Member["stats"];
+  openedQuests: string[];
+}
+export interface GlobalResponse {
+  user: MeResponse["user"];
+  isAdmin: boolean;
+  fellowships: FellowshipSummary[];
+  global: true;
+  ghosts: Ghost[];
+}
 export interface SyncResponse {
   importedCount: number;
   totalMiles: number;
   fellowshipMiles: number;
-  newBadges: Milestone[];
+  newBadges: FellowshipBadge[];
+}
+export interface AdminFellowship {
+  id: string;
+  name: string;
+  startDate: string;
+  allowedActivityTypes: string[];
+  activityMultipliers: Record<string, number>;
+  inviteToken: string;
+  hasCustomStravaApp: boolean;
+  memberCount: number;
+}
+export interface AdminUser {
+  id: string;
+  displayName: string;
+  fellowships: FellowshipSummary[];
 }
 
 async function json<T>(res: Response): Promise<T> {
@@ -41,9 +82,9 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function stravaAuthUrl(inviteToken?: string): string {
+export function stravaAuthUrl(clientId?: string | null, inviteToken?: string): string {
   const params = new URLSearchParams({
-    client_id: import.meta.env.VITE_STRAVA_CLIENT_ID,
+    client_id: clientId ?? import.meta.env.VITE_STRAVA_CLIENT_ID,
     redirect_uri: import.meta.env.VITE_STRAVA_REDIRECT_URI,
     response_type: "code",
     scope: "activity:read",
@@ -54,19 +95,24 @@ export function stravaAuthUrl(inviteToken?: string): string {
 }
 
 export const api = {
-  me: () => fetch("/api/me", { credentials: "include" }).then((r) => (r.status === 401 ? null : json<MeResponse>(r))),
-  sync: () => fetch("/api/sync", { method: "POST", credentials: "include" }).then(json<SyncResponse>),
-  questOpen: (questId: string) =>
+  me: (fellowshipId?: string) =>
+    fetch(`/api/me${fellowshipId ? `?fellowshipId=${encodeURIComponent(fellowshipId)}` : ""}`, { credentials: "include" })
+      .then((r) => (r.status === 401 ? null : json<MeResponse>(r))),
+  meGlobal: () =>
+    fetch("/api/me?view=global", { credentials: "include" }).then((r) => (r.status === 401 ? null : json<GlobalResponse>(r))),
+  sync: (fellowshipId: string) =>
+    fetch(`/api/sync?fellowshipId=${encodeURIComponent(fellowshipId)}`, { method: "POST", credentials: "include" }).then(json<SyncResponse>),
+  questOpen: (questId: string, fellowshipId: string) =>
     fetch("/api/quest-open", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questId }),
+      body: JSON.stringify({ questId, fellowshipId }),
     }).then(json<{ openedQuests: string[] }>),
-  achievementsSeen: (ids: string[]) =>
+  achievementsSeen: (ids: string[], fellowshipId: string) =>
     fetch("/api/achievements-seen", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ ids, fellowshipId }),
     }).then(json<{ notifiedAchievements: string[] }>),
   chooseCharacter: (character: CharacterKey, color: string) =>
     fetch("/api/character", {
@@ -74,13 +120,26 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ character, color }),
     }).then(json<{ ok: true }>),
-  createFellowship: (name: string) =>
-    fetch("/api/invite", {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    }).then(json<{ inviteToken: string; fellowshipId: string }>),
   checkInvite: (token: string) =>
-    fetch(`/api/invite?token=${encodeURIComponent(token)}`).then(json<{ valid: boolean; fellowshipName?: string }>),
+    fetch(`/api/invite?token=${encodeURIComponent(token)}`).then(json<{ valid: boolean; fellowshipName?: string; stravaClientId: string | null }>),
   logout: () => fetch("/api/auth/logout", { method: "POST", credentials: "include" }),
+
+  adminListFellowships: () => fetch("/api/admin/fellowships", { credentials: "include" }).then(json<{ fellowships: AdminFellowship[] }>),
+  adminCreateFellowship: (body: { name: string; startDate: string; allowedActivityTypes: string[]; activityMultipliers?: Record<string, number>; stravaClientId?: string; stravaClientSecret?: string }) =>
+    fetch("/api/admin/fellowships", {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    }).then(json<{ id: string; inviteToken: string }>),
+  adminUpdateFellowship: (body: { id: string; name?: string; startDate?: string; allowedActivityTypes?: string[]; activityMultipliers?: Record<string, number>; stravaClientId?: string; stravaClientSecret?: string }) =>
+    fetch("/api/admin/fellowships", {
+      method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    }).then(json<{ ok: true }>),
+  adminListMembers: () => fetch("/api/admin/members", { credentials: "include" }).then(json<{ users: AdminUser[] }>),
+  adminAddMember: (userId: string, fellowshipId: string) =>
+    fetch("/api/admin/members", {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, fellowshipId }),
+    }).then(json<{ ok: true }>),
+  adminRemoveMember: (userId: string, fellowshipId: string) =>
+    fetch("/api/admin/members", {
+      method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, fellowshipId }),
+    }).then(json<{ ok: true }>),
 };

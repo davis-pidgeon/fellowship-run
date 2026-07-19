@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, type MeResponse } from "../api-client";
 import { DEFAULT_COLOR } from "../../shared/characters.js";
 import type { CharacterKey } from "../../shared/types.js";
@@ -9,6 +10,7 @@ export function Settings({ me, refresh }: { me: MeResponse; refresh: () => void 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [color, setColor] = useState<string>(me.user.color ?? DEFAULT_COLOR);
+  const navigate = useNavigate();
 
   const choose = async (key: CharacterKey) => {
     setSaving(true);
@@ -41,6 +43,14 @@ export function Settings({ me, refresh }: { me: MeResponse; refresh: () => void 
               saving={saving}
               currentCharacter={me.user.chosenCharacter}
             />
+            {me.isAdmin && (
+              <button
+                className="admin-link-btn"
+                onClick={() => { setOpen(false); navigate("/admin"); }}
+              >
+                ⚔ Admin
+              </button>
+            )}
           </div>
         </div>
       )}
