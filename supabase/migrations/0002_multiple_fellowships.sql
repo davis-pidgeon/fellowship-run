@@ -27,6 +27,12 @@ alter table users
   add column strava_client_id text,
   add column strava_client_secret text;
 
+-- fellowship_id is now legacy (membership lives in fellowship_members) and is
+-- dropped in 0003. New signups no longer set it, so it must be nullable in the
+-- window between this migration and 0003 — otherwise every new user insert
+-- fails the NOT NULL constraint. Existing rows keep their value until 0003.
+alter table users alter column fellowship_id drop not null;
+
 -- sport_type was never stored before this migration (the sync handler filtered
 -- to foot-travel types and discarded the field). Every historical activity was
 -- imported under that same foot-travel filter, so 'Run' is a safe backfill: it
