@@ -64,6 +64,7 @@ export interface AdminFellowship {
   name: string;
   startDate: string;
   allowedActivityTypes: string[];
+  activityMultipliers: Record<string, number>;
   inviteToken: string;
   hasCustomStravaApp: boolean;
   memberCount: number;
@@ -122,11 +123,11 @@ export const api = {
   logout: () => fetch("/api/auth/logout", { method: "POST", credentials: "include" }),
 
   adminListFellowships: () => fetch("/api/admin/fellowships", { credentials: "include" }).then(json<{ fellowships: AdminFellowship[] }>),
-  adminCreateFellowship: (body: { name: string; startDate: string; allowedActivityTypes: string[]; stravaClientId?: string; stravaClientSecret?: string }) =>
+  adminCreateFellowship: (body: { name: string; startDate: string; allowedActivityTypes: string[]; activityMultipliers?: Record<string, number>; stravaClientId?: string; stravaClientSecret?: string }) =>
     fetch("/api/admin/fellowships", {
       method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(json<{ id: string; inviteToken: string }>),
-  adminUpdateFellowship: (body: { id: string; name?: string; startDate?: string; allowedActivityTypes?: string[]; stravaClientId?: string; stravaClientSecret?: string }) =>
+  adminUpdateFellowship: (body: { id: string; name?: string; startDate?: string; allowedActivityTypes?: string[]; activityMultipliers?: Record<string, number>; stravaClientId?: string; stravaClientSecret?: string }) =>
     fetch("/api/admin/fellowships", {
       method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(json<{ ok: true }>),
