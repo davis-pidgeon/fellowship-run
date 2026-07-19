@@ -99,7 +99,7 @@ function RunnerOverlay({ member, miles, offsetX, onSelect, cluster }: { member: 
   );
 }
 
-function GhostOverlay({ ghost }: { ghost: Ghost }) {
+function GhostOverlay({ ghost, onSelect }: { ghost: Ghost; onSelect?: (ghost: Ghost) => void }) {
   const p = positionForMiles(ghost.totalMiles, ROUTE_WAYPOINTS);
   const lat = latFor(p.y);
   const footLat = lat - FOOT_FRAC * CHAR_H;
@@ -112,12 +112,18 @@ function GhostOverlay({ ghost }: { ghost: Ghost }) {
       url={spriteFor(ghost.chosenCharacter)}
       bounds={overlayBounds}
       zIndex={600}
-      interactive={false}
+      interactive
       eventHandlers={{
         add: (e) => {
           const el = (e.target as L.ImageOverlay).getElement();
-          if (el) { el.style.imageRendering = "pixelated"; el.style.opacity = "0.38"; }
+          if (el) {
+            el.style.imageRendering = "pixelated";
+            el.style.opacity = "0.6";
+            el.style.filter = `drop-shadow(0 0 4px ${ghost.color ?? "#fff"}) drop-shadow(0 0 6px ${ghost.color ?? "#fff"})`;
+            el.style.cursor = "pointer";
+          }
         },
+        click: () => onSelect?.(ghost),
       }}
     />
   );
@@ -259,6 +265,7 @@ export function MapView({
   openedQuestIds,
   onSelectRunner,
   ghosts,
+  onSelectGhost,
 }: {
   members: Member[];
   fellowshipMiles: number;
@@ -269,6 +276,7 @@ export function MapView({
   openedQuestIds: string[];
   onSelectRunner: (members: Member[], pt: { x: number; y: number }) => void;
   ghosts?: Ghost[];
+  onSelectGhost?: (ghost: Ghost) => void;
 }) {
   const [t, setT] = useState(0);
   const [following, setFollowing] = useState(true);
@@ -368,7 +376,7 @@ export function MapView({
         <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} onSelect={onSelectRunner} cluster={clusterFor(i)} />
       ))}
 
-      {ghosts?.map((g) => <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} />)}
+      {ghosts?.map((g) => <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} onSelect={onSelectGhost} />)}
 
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />
