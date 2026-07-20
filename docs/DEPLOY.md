@@ -28,26 +28,27 @@ The `mulitiple-fellowships-impl` branch (worktree: `.worktrees/mulitiple-fellows
 
 ### Phase 1 — pre-deploy migrations (additive; safe while the OLD code is still live)
 
-- [ ] **[USER]** Run `supabase/migrations/0002_multiple_fellowships.sql` in the prod SQL editor.
-- [ ] **[USER]** Run the two manual follow-ups from `0002`'s trailing comments:
+- [x] **[USER]** Run `supabase/migrations/0002_multiple_fellowships.sql` in the prod SQL editor.
+- [x] **[USER]** Run the two manual follow-ups from `0002`'s trailing comments:
   - If the deployed `JOURNEY_START_DATE` env var ≠ `2026-07-01`: `update fellowship set start_date = '<that value>' where id = (select id from fellowship order by created_at limit 1);`
   - Make yourself admin: `update users set is_admin = true where id = '<your user id>';` (find your id in the `users` table).
   - Sanity check: `select count(*) from fellowship_members;` should equal `select count(*) from users;`
-- [ ] **[USER]** Run `supabase/migrations/0005_activity_multipliers.sql` (additive column, default `{}` → ×1.0).
-- [ ] **[USER]** Verify the `0004` prerequisite: confirm `users.opened_quests` and `users.notified_achievements` are **`jsonb`** on prod (they exist already from the notes/achievements features). Run: `select data_type from information_schema.columns where table_schema='public' and table_name='users' and column_name in ('opened_quests','notified_achievements');`
+- [x] **[USER]** Run `supabase/migrations/0005_activity_multipliers.sql` (additive column, default `{}` → ×1.0).
+- [x] **[USER]** Verify the `0004` prerequisite: confirm `users.opened_quests` and `users.notified_achievements` are **`jsonb`** on prod (they exist already from the notes/achievements features). Run: `select data_type from information_schema.columns where table_schema='public' and table_name='users' and column_name in ('opened_quests','notified_achievements');` — **confirmed `jsonb` on prod; no pre-step needed.**
   - If they are `ARRAY`/`text[]` instead of `jsonb`, first run the two `alter … type jsonb using to_jsonb(...)` lines from the header comment of `0004_per_fellowship_collections.sql`.
 
 > Why not `0004`/`0003` yet: `0004` reshapes `opened_quests`/`notified_achievements` into a per-fellowship object shape that the OLD code can't read (it expects flat arrays), and `0003` drops `users.fellowship_id`/`total_miles` that the OLD code still needs. Both must wait until the new code is live.
 
 ### Phase 2 — deploy the code
 
-- [ ] **[CLAUDE]** Open the PR: `mulitiple-fellowships-impl` → `main` (e.g. `gh pr create --base main --head mulitiple-fellowships-impl`). Confirm the branch is green (`npx tsc -b --noEmit && npm test`).
-- [ ] **[CLAUDE]** After the user confirms Phase 1 migrations are in, merge the PR to `main` and push. Vercel auto-deploys `main` to production. Wait for the deploy to succeed.
+- [x] **[CLAUDE]** Open the PR: `mulitiple-fellowships-impl` → `main` (e.g. `gh pr create --base main --head mulitiple-fellowships-impl`). Confirm the branch is green (`npx tsc -b --noEmit && npm test`). — merged as PR #1, `main` @ `51bf5b2`.
+- [x] **[CLAUDE]** After the user confirms Phase 1 migrations are in, merge the PR to `main` and push. Vercel auto-deploys `main` to production. Wait for the deploy to succeed.
+  - ⚠️ **Auto-deploy did NOT fire** for the merge (no deployment appeared ~30 min after `51bf5b2` landed; no GitHub checks either). Deployed **manually** instead: `vercel --prod` from a clean worktree pinned to `51bf5b2` → `dpl_3B9W46yptSphGrtQeF2L8SkC7HBQ`, READY, aliased to `fellowship-run.vercel.app`. **Investigate the GitHub→Vercel auto-deploy wiring before the next ship.**
 
 ### Phase 3 — post-deploy migrations (run immediately after the deploy is live)
 
-- [ ] **[USER]** Run `supabase/migrations/0004_per_fellowship_collections.sql` (reshapes collections; the now-live new code reads them correctly).
-- [ ] **[USER]** Run `supabase/migrations/0003_drop_legacy_fellowship_columns.sql` (drops the legacy `users.fellowship_id` / `total_miles`).
+- [x] **[USER]** Run `supabase/migrations/0004_per_fellowship_collections.sql` (reshapes collections; the now-live new code reads them correctly). — run via Supabase MCP; verified all 6 users now object-shaped, 0 array leftovers.
+- [x] **[USER]** Run `supabase/migrations/0003_drop_legacy_fellowship_columns.sql` (drops the legacy `users.fellowship_id` / `total_miles`). — snapshotted the dropped data into table `backup_users_legacy_fellowship_20260720` (6/6 rows) first, then dropped both columns; verified gone.
 
 ### Phase 4 — verify
 
@@ -59,7 +60,7 @@ The `mulitiple-fellowships-impl` branch (worktree: `.worktrees/mulitiple-fellows
 ## Rollback
 
 - **Code:** in Vercel, promote the previous production deployment (instant revert). Or revert the merge commit on `main` and push.
-- **Data:** restore the manual backup taken in the ⚠️ step. Note `0003` is destructive (drops columns) — only run it once the deploy is confirmed healthy; if unsure, leave `0003` for last and verify Phase 4 first.
+- **Data:** to undo `0003` specifically, restore the two dropped columns from the snapshot table `backup_users_legacy_fellowship_20260720` (holds `id` + old `fellowship_id` / `total_miles` for all users). A full-DB Supabase dashboard backup was *not* taken (MCP has no full-backup tool); take one from the dashboard if you want a whole-DB restore point. Safe to `drop table backup_users_legacy_fellowship_20260720` once prod is confirmed healthy.
 
 ## Known non-blocking notes (from the code reviews — no action required)
 
@@ -69,5 +70,14 @@ The `mulitiple-fellowships-impl` branch (worktree: `.worktrees/mulitiple-fellows
 
 ## Current state (update this when things change)
 
-- Branch head at time of writing: `b474e24` (pushed to origin).
-- Migrations **NOT yet run on prod.** Code **NOT yet deployed.** Strava callback domain currently set to `localhost` (must revert).
+_Last updated: 2026-07-19 (evening)._
+
+**DEPLOYED & MIGRATED.** `main` @ `51bf5b2` is live in production (`fellowship-run.vercel.app`, deployment `dpl_3B9W46yptSphGrtQeF2L8SkC7HBQ`). All migrations `0002`–`0005` are applied and verified on prod (`qdwuzvztnzxtouowjmjx`). Prod returns HTTP 200.
+
+Note: the deploy was **manual** (`vercel --prod`) — GitHub→Vercel auto-deploy did not fire on the merge. Also note local `main` had to be fast-forwarded to `origin/main` (the PR merge only landed on the remote).
+
+**Still outstanding (deferred — pick up later):**
+- ⚠️ **[USER] Revert the Strava callback domain** to `fellowship-run.vercel.app` at <https://www.strava.com/settings/api> (still on `localhost` from local testing). **First-time sign-ins fail until this is done.**
+- **[USER] Phase 4 human verification** (existing members' mileage; admin screen; Global 🌐 view; a fresh sign-in). Not yet performed.
+- **Investigate why auto-deploy didn't trigger** so future pushes to `main` deploy on their own.
+- Optional cleanup once healthy: `drop table backup_users_legacy_fellowship_20260720;`
