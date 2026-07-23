@@ -74,6 +74,8 @@ export function Passport({ totalMiles, openedQuestIds, weeklyBadges }: {
                 <h4>{reading.title}{reading.mi != null ? ` · ${reading.mi} mi` : ""}</h4>
                 <p className="lore">{reading.lore}</p>
               </div>
+            ) : shown.length === 0 ? (
+              <p className="lore">Nothing here yet — try another filter.</p>
             ) : narrative ? (
               <div className="bp-reading-list">
                 {shown.map((it) => (
