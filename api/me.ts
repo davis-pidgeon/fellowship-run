@@ -3,6 +3,31 @@ import { getServiceClient } from "./_lib/supabase.js";
 import { readSessionUserId } from "./_lib/http.js";
 import { memberTotal, activitiesForFellowship, multiplierFor } from "../shared/fellowship-sync.js";
 import type { Fellowship, RunActivity } from "../shared/types.js";
+import { weekStart } from "../shared/weeks.js";
+import { weekMiles, type FellowshipInput } from "../shared/weekly.js";
+
+export interface RankingRow {
+  id: string; name: string; pooledMiles: number; memberCount: number;
+  weekPooled: number; weekPerCapita: number; isProgressLeader: boolean;
+}
+
+// Per-fellowship leaderboard rows for the global view: pooled all-time miles,
+// this-week pooled + per-capita, and a single progress-leader flag on the
+// highest-pooledMiles fellowship (only if it has any miles at all).
+export function buildRankingRows(inputs: FellowshipInput[], currentWeekStartISO: string): RankingRow[] {
+  const rows = inputs.map(({ fellowship, members }) => {
+    const pooledMiles = members.reduce((s, m) => s + memberTotal(m.activities, fellowship), 0);
+    const weekPooled = members.reduce((s, m) => s + weekMiles(m.activities, fellowship, currentWeekStartISO), 0);
+    return {
+      id: fellowship.id, name: fellowship.name, pooledMiles, memberCount: members.length,
+      weekPooled, weekPerCapita: members.length ? weekPooled / members.length : 0, isProgressLeader: false,
+    };
+  });
+  let leader: RankingRow | null = null;
+  for (const r of rows) if (!leader || r.pooledMiles > leader.pooledMiles) leader = r;
+  if (leader && leader.pooledMiles > 0) leader.isProgressLeader = true;
+  return rows;
+}
 
 // Longest run of consecutive week-buckets (weeks identified by floor(epoch / 7 days)).
 function maxWeekStreak(weeks: Set<number>): number {
@@ -88,6 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       chosenCharacter: string | null; color: string | null; totalMiles: number;
       stats: ReturnType<typeof computeStats>; openedQuests: string[];
     }[] = [];
+    const inputsByF = new Map<string, FellowshipInput>();
     for (const m of allMemberships ?? []) {
       const f = m.fellowship as unknown as { id: string; name: string; start_date: string; allowed_activity_types: string[]; activity_multipliers: unknown } | null;
       const u = usersById.get(m.user_id);
@@ -111,10 +137,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         stats: computeStats(scoped, fellowship),
         openedQuests: slice(u.opened_quests, f.id),
       });
+      const existing = inputsByF.get(f.id) ?? { fellowship, members: [] };
+      existing.members.push({ userId: u.id, activities });
+      inputsByF.set(f.id, existing);
     }
+    const rankings = buildRankingRows([...inputsByF.values()], weekStart(new Date()));
     return res.status(200).json({
       user: { id: user.id, displayName: user.display_name, avatarUrl: user.avatar_url, chosenCharacter: user.chosen_character, color: user.color },
-      isAdmin: user.is_admin, fellowships: fellowshipsSummary, global: true, ghosts,
+      isAdmin: user.is_admin, fellowships: fellowshipsSummary, global: true, ghosts, rankings,
     });
   }
 
