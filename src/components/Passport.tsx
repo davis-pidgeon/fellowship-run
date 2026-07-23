@@ -1,33 +1,49 @@
 import { useState } from "react";
 import { ROUTE } from "../../shared/route";
-import { SIDE_QUESTS, ARCS, type QuestArc } from "../../shared/sidequests";
+import { SIDE_QUESTS, ARCS } from "../../shared/sidequests";
 
-// A journey log: the backpack opens a book grouped into collections — the
-// landmark postcards you've reached, plus each story thread of notes you've
-// opened (opening a note on the map moves it here). Progress shows per thread.
-export function Passport({
-  totalMiles,
-  openedQuestIds,
-}: {
+type Filter = "all" | "postcards" | "letters" | "badges";
+
+interface Item {
+  kind: "postcard" | "letter" | "badge";
+  id: string;
+  title: string;
+  sortKey: number; // higher = more recent; used for recency ordering
+  scene?: string;  // postcard image path
+  lore?: string;   // postcard/letter body
+  arcColor?: string;
+  mi?: number;
+}
+
+export function Passport({ totalMiles, openedQuestIds, weeklyBadges }: {
   totalMiles: number;
   openedQuestIds: string[];
+  weeklyBadges: { week_start: string }[];
 }) {
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [reading, setReading] = useState<Item | null>(null);
 
-  const totalLandmarks = ROUTE.filter((w) => w.isLandmark).length;
-  const landmarks = ROUTE.filter((w) => w.isLandmark && w.cumulativeMiles <= totalMiles);
-
+  const postcards: Item[] = ROUTE.filter((w) => w.isLandmark && w.cumulativeMiles <= totalMiles).map((w) => ({
+    kind: "postcard", id: w.landmarkId!, title: w.name, sortKey: w.cumulativeMiles, scene: `/scenes/${w.landmarkId}.png`, lore: w.lore, mi: w.cumulativeMiles,
+  }));
   const openedSet = new Set(openedQuestIds);
-  const arcOrder = Object.keys(ARCS) as QuestArc[];
-  const collections = arcOrder
-    .map((arc) => {
-      const all = SIDE_QUESTS.filter((q) => q.arc === arc);
-      const found = all.filter((q) => openedSet.has(q.id));
-      return { arc, info: ARCS[arc], total: all.length, found };
-    })
-    .filter((c) => c.found.length > 0);
+  const letters: Item[] = SIDE_QUESTS.filter((q) => openedSet.has(q.id)).map((q) => ({
+    kind: "letter", id: q.id, title: q.title, sortKey: q.revealMiles, lore: q.story, arcColor: ARCS[q.arc]?.color, mi: q.revealMiles,
+  }));
+  const badges: Item[] = weeklyBadges.map((b) => ({
+    kind: "badge", id: `week-${b.week_start}`, title: `Member of the Week`, sortKey: new Date(`${b.week_start}T00:00:00Z`).getTime() / 1e6,
+    lore: `You logged the most miles the week of ${b.week_start}.`,
+  }));
 
-  const nothing = landmarks.length === 0 && collections.length === 0;
+  const all = [...postcards, ...letters, ...badges].sort((a, b) => b.sortKey - a.sortKey);
+  const shown = filter === "all" ? all
+    : filter === "postcards" ? postcards.slice().sort((a, b) => b.sortKey - a.sortKey)
+    : filter === "letters" ? letters.slice().sort((a, b) => b.sortKey - a.sortKey)
+    : badges.slice().sort((a, b) => b.sortKey - a.sortKey);
+  const narrative = filter === "letters" || filter === "postcards";
+
+  const iconFor = (it: Item) => it.kind === "postcard" ? "🖼️" : it.kind === "letter" ? "✉️" : "🏅";
 
   return (
     <>
@@ -41,52 +57,40 @@ export function Passport({
             <button className="passport-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
             <h2>Your Journey</h2>
 
-            {nothing ? (
-              <p className="lore">
-                No postcards or notes yet — lace up and reach your first landmark, or find a letter along the road, to start your collection!
-              </p>
-            ) : (
-              <div className="passport-scroll">
-                {landmarks.length > 0 && (
-                  <section className="collection">
-                    <h3 className="collection-head">
-                      Landmarks <span className="collection-count">{landmarks.length}/{totalLandmarks}</span>
-                    </h3>
-                    {landmarks.map((w) => (
-                      <div className="postcard-entry" key={w.landmarkId}>
-                        <img
-                          className="postcard-scene"
-                          src={`/scenes/${w.landmarkId}.png`}
-                          alt={w.name}
-                          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-                        />
-                        <h4>{w.name} <span className="entry-mi">· {w.cumulativeMiles} mi</span></h4>
-                        <p className="lore">{w.lore}</p>
-                      </div>
-                    ))}
-                  </section>
-                )}
+            <div className="bp-chips">
+              {(["all", "postcards", "letters", "badges"] as Filter[]).map((f) => (
+                <button key={f} className={"bp-chip" + (filter === f ? " on" : "")} onClick={() => { setFilter(f); setReading(null); }}>
+                  {f[0].toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
 
-                {collections.map((c) => (
-                  <section className="collection" key={c.arc}>
-                    <h3
-                      className="collection-head"
-                      style={{ color: c.arc === "general" ? undefined : c.info.color }}
-                    >
-                      <span className="collection-dot" style={{ background: c.info.color }} />
-                      {c.info.title} <span className="collection-count">{c.found.length}/{c.total}</span>
-                    </h3>
-                    {c.found.map((q) => (
-                      <div
-                        className="note-entry"
-                        key={q.id}
-                        style={{ borderColor: c.arc === "general" ? undefined : c.info.color }}
-                      >
-                        <h4>{q.title} <span className="entry-mi">· {q.revealMiles} mi</span></h4>
-                        <p className="lore">{q.story}</p>
-                      </div>
-                    ))}
-                  </section>
+            {all.length === 0 ? (
+              <p className="lore">No postcards, letters, or badges yet — lace up and reach a landmark, find a letter, or win a week!</p>
+            ) : reading ? (
+              <div className="bp-reader">
+                <button className="bp-back" onClick={() => setReading(null)}>← Back</button>
+                {reading.scene && <img className="postcard-scene" src={reading.scene} alt={reading.title} onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />}
+                <h4>{reading.title}{reading.mi != null ? ` · ${reading.mi} mi` : ""}</h4>
+                <p className="lore">{reading.lore}</p>
+              </div>
+            ) : narrative ? (
+              <div className="bp-reading-list">
+                {shown.map((it) => (
+                  <div key={it.id} className="bp-rl-item" style={{ borderLeftColor: it.arcColor ?? "#c9a24a" }} onClick={() => setReading(it)}>
+                    <span className="bp-rl-ic">{iconFor(it)}</span>
+                    <span className="bp-rl-tt">{it.title}</span>
+                    <span className="bp-rl-mi">{it.mi != null ? `${it.mi} mi` : ""}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bp-grid">
+                {shown.map((it) => (
+                  <button key={it.id} className={"bp-tile bp-" + it.kind} onClick={() => (it.kind === "badge" ? setReading(it) : setReading(it))} title={it.title}>
+                    <span className="bp-tile-ic">{iconFor(it)}</span>
+                    <span className="bp-tile-tt">{it.title}</span>
+                  </button>
                 ))}
               </div>
             )}

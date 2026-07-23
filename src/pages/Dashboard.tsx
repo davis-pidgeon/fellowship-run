@@ -145,7 +145,7 @@ export default function Dashboard({
         </button>
       )}
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
-      {me && <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />}
+      {me && <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} weeklyBadges={me.weeklyBadges ?? []} />}
       {me && (
         <button
           className={"globe-btn" + (view === "global" ? " active" : "")}
