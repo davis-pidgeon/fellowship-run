@@ -12,6 +12,8 @@ import { Settings } from "../components/Settings";
 import { QuestNote } from "../components/QuestNote";
 import { ProfilePopover, ClusterPicker, type ProfileTarget, type ClusterTarget } from "../components/ProfilePopover";
 import { ProfileDetail } from "../components/ProfileDetail";
+import { GlobalRankingPanel } from "../components/GlobalRankingPanel";
+import { FellowshipCard } from "../components/FellowshipCard";
 import type { Member, Ghost } from "../api-client";
 import type { SideQuest } from "../../shared/sidequests";
 import type { DashboardView } from "../useSession";
@@ -52,6 +54,7 @@ export default function Dashboard({
   const [profile, setProfile] = useState<ProfileTarget | null>(null);
   const [cluster, setCluster] = useState<ClusterTarget | null>(null);
   const [profileDetail, setProfileDetail] = useState<Member | null>(null);
+  const [cardFellowshipId, setCardFellowshipId] = useState<string | null>(null);
 
   const onSelectRunner = (members: Member[], pt: { x: number; y: number }) => {
     if (members.length <= 1) setProfile({ member: members[0], pt });
@@ -119,7 +122,7 @@ export default function Dashboard({
         onSelectRunner={onSelectRunner}
         onSelectGhost={(g) => setProfileDetail(ghostToMember(g))}
       />
-      {me && (
+      {me && view !== "global" && (
         <StatsPanel
           me={me}
           onSync={onSync}
@@ -131,6 +134,18 @@ export default function Dashboard({
           fellowshipId={fellowshipId}
           onSelectFellowship={(id) => { setFellowshipId(id); setView("fellowship"); }}
         />
+      )}
+      {view === "global" && globalData && (
+        <GlobalRankingPanel
+          rankings={globalData.rankings}
+          myFellowshipId={fellowshipId}
+          onSelectFellowship={(id) => setCardFellowshipId(id)}
+        />
+      )}
+      {me && view !== "global" && fellowshipId && (
+        <button className="trophy-btn" onClick={() => setCardFellowshipId(fellowshipId)} title="Your trophy case" aria-label="Open your fellowship card">
+          <img src="/trophy.png" alt="Trophy case" onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")} />
+        </button>
       )}
       <CelebrationModal badges={badges} onClose={() => setBadges([])} />
       {me && <Passport totalMiles={me.user.totalMiles} openedQuestIds={openedQuests} />}
@@ -158,6 +173,11 @@ export default function Dashboard({
         onPick={(m) => setCluster((c) => { setProfile({ member: m, pt: c!.pt }); return null; })}
       />
       <ProfileDetail member={profileDetail} onClose={() => setProfileDetail(null)} />
+      <FellowshipCard
+        fellowshipId={cardFellowshipId}
+        isLeader={!!globalData?.rankings.find((r) => r.id === cardFellowshipId)?.isProgressLeader}
+        onClose={() => setCardFellowshipId(null)}
+      />
       <AchievementToasts toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
     </div>
   );

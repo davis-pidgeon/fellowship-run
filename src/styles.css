@@ -337,3 +337,38 @@ body { margin: 0; }
 .global-cols { display: flex; gap: 20px; }
 .global-cols > div { flex: 1; }
 .expand-btn { width: 100%; margin-top: 8px; background: #2a2210; border: 1px solid #6b5a2e; color: #f0d97a; border-radius: 7px; padding: 6px; font-size: 12px; cursor: pointer; }
+
+/* Fellowship card modal */
+.fellowship-card { position: relative; max-width: 620px; width: 92vw; max-height: 88vh; overflow-y: auto;
+  background: #140e05; border: 2px solid #c0392b; border-radius: 16px; padding: 20px 22px;
+  color: #e8dcc0; font-family: Georgia, serif; }
+.fc-loading, .fc-empty { color: #9a8a5a; padding: 20px; text-align: center; }
+.fc-name { text-align: center; color: #f0a030; margin: 0 0 4px; }
+.fc-standing { text-align: center; font-size: 12px; color: #d8c88a; margin-bottom: 14px; }
+.fc-crown { height: 18px; vertical-align: middle; margin-right: 4px; }
+.fc-tabs { display: flex; gap: 6px; justify-content: center; border-bottom: 1px solid #3a3018; margin-bottom: 16px; }
+.fc-tab { border: 0; background: transparent; color: #9a8a5a; font-size: 13px; padding: 8px 14px; border-bottom: 2px solid transparent; cursor: pointer; }
+.fc-tab.on { color: #f0e2c0; border-bottom-color: #f0a030; }
+.fc-shelf-head { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #9a8a5a; margin: 6px 0 8px; display: flex; justify-content: space-between; }
+.fc-shelf { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 16px; }
+.fc-badge, .fc-medal { aspect-ratio: 1; background: #221a0c; border: 1px solid #4a3c1c; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; }
+.fc-badge img, .fc-medal img { max-width: 60%; image-rendering: pixelated; }
+.fc-badge small, .fc-medal small { font-size: 7px; color: #9a8a5a; text-align: center; }
+.fc-medal.locked { opacity: .28; filter: grayscale(1); }
+.fc-member-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.fc-mtile { position: relative; border: 2px solid var(--c); border-radius: 12px; padding: 14px 10px 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 16%, #1a1408), #140e05);
+  display: flex; flex-direction: column; align-items: center; text-align: center; }
+.fc-mrank { position: absolute; top: 6px; left: 8px; font-size: 10px; color: #9a8a5a; }
+.fc-msprite { width: 48px; height: 64px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 4px var(--c)); }
+.fc-mname { font-size: 15px; color: #f0e2c0; margin: 4px 0 8px; }
+.fc-mstats { display: flex; gap: 10px; width: 100%; justify-content: center; border-top: 1px solid rgba(255,255,255,.08); padding-top: 8px; }
+.fc-mv { font-size: 15px; font-weight: 600; }
+.fc-mv.tot { color: var(--c); }
+.fc-mv.wk { color: #7fc97f; }
+.fc-mk { font-size: 8px; text-transform: uppercase; letter-spacing: .4px; color: #8a7a4a; }
+.trophy-btn { position: absolute; left: 12px; bottom: 12px; width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(42,32,16,0.9); border: 2px solid #6b5a2e; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 1000; padding: 0; }
+.trophy-btn img { width: 26px; height: 26px; }

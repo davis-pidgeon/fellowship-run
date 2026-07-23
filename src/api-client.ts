@@ -81,6 +81,13 @@ export interface AdminUser {
   displayName: string;
   fellowships: FellowshipSummary[];
 }
+export interface FellowshipCardData {
+  fellowship: { id: string; name: string };
+  standing: { pooledMiles: number; progressPct: number; totalMiles: number; memberCount: number };
+  weeklyBadges: { week_start: string; scope: "global_pooled" | "global_percapita"; metric_value: number }[];
+  landmarks: { all: { id: string; name: string; miles: number }[]; reached: string[] };
+  members: { id: string; displayName: string; chosenCharacter: string | null; color: string | null; totalMiles: number; lastWeekMiles: number }[];
+}
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`${res.status}`);
@@ -147,4 +154,7 @@ export const api = {
     fetch("/api/admin/members", {
       method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, fellowshipId }),
     }).then(json<{ ok: true }>),
+
+  fellowship: (fellowshipId: string) =>
+    fetch(`/api/fellowship?fellowshipId=${encodeURIComponent(fellowshipId)}`, { credentials: "include" }).then(json<FellowshipCardData>),
 };
