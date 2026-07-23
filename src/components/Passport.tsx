@@ -32,7 +32,7 @@ export function Passport({ totalMiles, openedQuestIds, weeklyBadges }: {
     kind: "letter", id: q.id, title: q.title, sortKey: q.revealMiles, lore: q.story, arcColor: ARCS[q.arc]?.color, mi: q.revealMiles,
   }));
   const badges: Item[] = weeklyBadges.map((b) => ({
-    kind: "badge", id: `week-${b.week_start}`, title: `Member of the Week`, sortKey: new Date(`${b.week_start}T00:00:00Z`).getTime() / 1e6,
+    kind: "badge", id: `week-${b.week_start}`, title: `Member of the Week`, sortKey: new Date(`${b.week_start}T00:00:00Z`).getTime() / 1e9,
     lore: `You logged the most miles the week of ${b.week_start}.`,
   }));
 
@@ -87,7 +87,7 @@ export function Passport({ totalMiles, openedQuestIds, weeklyBadges }: {
             ) : (
               <div className="bp-grid">
                 {shown.map((it) => (
-                  <button key={it.id} className={"bp-tile bp-" + it.kind} onClick={() => (it.kind === "badge" ? setReading(it) : setReading(it))} title={it.title}>
+                  <button key={it.id} className={"bp-tile bp-" + it.kind} onClick={() => setReading(it)} title={it.title}>
                     <span className="bp-tile-ic">{iconFor(it)}</span>
                     <span className="bp-tile-tt">{it.title}</span>
                   </button>
