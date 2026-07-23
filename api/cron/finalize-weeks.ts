@@ -77,8 +77,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const rows = planFinalization({ inputs, earliestActivityDate: earliest, now: new Date(), recordedWeeks });
   if (rows.length) {
-    // ignoreDuplicates guards against a concurrent run racing the same week.
-    await db.from("weekly_awards").upsert(rows, { onConflict: "week_start,scope", ignoreDuplicates: true });
+    const { error } = await db.from("weekly_awards").insert(rows);
+    // 23505 = unique_violation: a concurrent run already recorded these weeks; safe to ignore
+    // (the partial unique indexes are the backstop). Any other error should surface.
+    if (error && error.code !== "23505") return res.status(500).json({ error: error.message });
   }
   return res.status(200).json({ finalized: rows.length });
 }
