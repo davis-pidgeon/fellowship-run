@@ -194,6 +194,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const fellowshipMiles = memberList.reduce((s, m) => s + m.totalMiles, 0);
   const me = memberList.find((m) => m.id === user.id);
 
+  const { data: weeklyBadgeRows } = await db
+    .from("weekly_awards")
+    .select("week_start")
+    .eq("scope", "member")
+    .eq("fellowship_id", fellowship.id)
+    .eq("user_id", user.id)
+    .order("week_start", { ascending: false });
+
   return res.status(200).json({
     user: {
       id: user.id, displayName: user.display_name, avatarUrl: user.avatar_url,
@@ -206,5 +214,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     fellowshipMiles,
     openedQuests: slice(user.opened_quests, fellowship.id),
     notifiedAchievements: slice(user.notified_achievements, fellowship.id),
+    weeklyBadges: weeklyBadgeRows ?? [],
   });
 }

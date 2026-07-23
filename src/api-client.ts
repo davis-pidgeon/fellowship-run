@@ -36,6 +36,7 @@ export interface MeResponse {
   fellowshipMiles: number;
   openedQuests: string[];
   notifiedAchievements: string[];
+  weeklyBadges: { week_start: string }[];
 }
 export interface Ghost {
   userId: string;

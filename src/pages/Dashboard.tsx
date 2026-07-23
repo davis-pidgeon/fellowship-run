@@ -75,6 +75,21 @@ export default function Dashboard({
     seededRef.current = true;
   }, [me, openedQuests, fellowshipId]);
 
+  // Detect newly-earned member-of-the-week badges and pop a toast, mirroring the
+  // achievements effect above: first pass seeds silently, later passes toast.
+  const badgeSeenRef = useRef<Set<string>>(new Set());
+  const badgeSeededRef = useRef(false);
+  useEffect(() => {
+    if (!me) return;
+    const weeks = (me.weeklyBadges ?? []).map((b) => b.week_start);
+    const fresh = weeks.filter((w) => !badgeSeenRef.current.has(w));
+    fresh.forEach((w) => badgeSeenRef.current.add(w));
+    if (badgeSeededRef.current && fresh.length) {
+      setToasts((prev) => [...prev, ...fresh.map((w) => ({ id: `week-${w}`, name: "Member of the Week!", description: `You logged the most miles the week of ${w}.`, icon: "🏅", earned: true }))]);
+    }
+    badgeSeededRef.current = true;
+  }, [me]);
+
   const onSync = async () => {
     if (!fellowshipId) return;
     setSyncing(true);

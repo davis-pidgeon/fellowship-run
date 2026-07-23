@@ -15,6 +15,7 @@ const me: MeResponse = {
   fellowshipMiles: 658,
   openedQuests: [],
   notifiedAchievements: [],
+  weeklyBadges: [],
 };
 
 describe("nextLandmark", () => {
