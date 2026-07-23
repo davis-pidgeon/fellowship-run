@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
@@ -10,5 +10,8 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["api/**", "node"],
     ],
+    // Nested git worktrees ship their own node_modules (a second React copy);
+    // scanning their tests breaks with dual-React "useState of null" errors.
+    exclude: [...configDefaults.exclude, ".worktrees/**"],
   },
 });
