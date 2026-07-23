@@ -14,26 +14,9 @@ import { ProfilePopover, ClusterPicker, type ProfileTarget, type ClusterTarget }
 import { ProfileDetail } from "../components/ProfileDetail";
 import { GlobalRankingPanel } from "../components/GlobalRankingPanel";
 import { FellowshipCard } from "../components/FellowshipCard";
-import type { Member, Ghost } from "../api-client";
+import type { Member } from "../api-client";
 import type { SideQuest } from "../../shared/sidequests";
 import type { DashboardView } from "../useSession";
-
-// Ghosts carry everything the player card needs, minus a recent-activity list
-// (which isn't shipped across fellowships) — map them into the `Member` shape
-// `ProfileDetail` expects so the same card can be reused for both.
-function ghostToMember(ghost: Ghost): Member {
-  return {
-    id: ghost.userId,
-    displayName: ghost.displayName,
-    chosenCharacter: ghost.chosenCharacter,
-    color: ghost.color,
-    totalMiles: ghost.totalMiles,
-    openedQuests: ghost.openedQuests,
-    stats: ghost.stats,
-    activities: [],
-    fellowshipName: ghost.fellowshipName,
-  };
-}
 
 export default function Dashboard({
   me, refresh, globalData, fellowshipId, setFellowshipId, view, setView,
@@ -120,7 +103,6 @@ export default function Dashboard({
         onNavigate={() => setPanelCollapsed(true)}
         openedQuestIds={openedQuests}
         onSelectRunner={onSelectRunner}
-        onSelectGhost={(g) => setProfileDetail(ghostToMember(g))}
       />
       {me && view !== "global" && (
         <StatsPanel

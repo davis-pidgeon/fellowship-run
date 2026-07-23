@@ -36,6 +36,15 @@ function spriteFor(character: string | null): string {
   return CHARACTERS.find((c) => c.key === character)?.sprite ?? "/sprites/frodo.png";
 }
 
+// Ghosts carry everything the player card needs, minus a recent-activity list
+// (which isn't shipped across fellowships) — map them into the `Member` shape
+// so they flow through the same cluster/picker/detail path as real members.
+// (Intentional local copy of the identical helper in Dashboard.tsx — not shared.)
+function ghostToMember(ghost: Ghost): Member {
+  return { id: ghost.userId, displayName: ghost.displayName, chosenCharacter: ghost.chosenCharacter, color: ghost.color,
+    totalMiles: ghost.totalMiles, openedQuests: ghost.openedQuests, stats: ghost.stats, activities: [], fellowshipName: ghost.fellowshipName };
+}
+
 // CRS.Simple counts latitude UPWARD; image pixels count y DOWNWARD.
 function latFor(imgY: number): number {
   return HEIGHT - imgY;
@@ -99,14 +108,12 @@ function RunnerOverlay({ member, miles, offsetX, onSelect, cluster }: { member: 
   );
 }
 
-function GhostOverlay({ ghost, onSelect }: { ghost: Ghost; onSelect?: (ghost: Ghost) => void }) {
+function GhostOverlay({ ghost, onSelectCluster }: { ghost: Ghost; onSelectCluster: (pt: { x: number; y: number }) => void }) {
+  const map = useMap();
   const p = positionForMiles(ghost.totalMiles, ROUTE_WAYPOINTS);
   const lat = latFor(p.y);
   const footLat = lat - FOOT_FRAC * CHAR_H;
-  const overlayBounds: L.LatLngBoundsExpression = [
-    [footLat, p.x - CHAR_W / 2],
-    [footLat + CHAR_H, p.x + CHAR_W / 2],
-  ];
+  const overlayBounds: L.LatLngBoundsExpression = [[footLat, p.x - CHAR_W / 2], [footLat + CHAR_H, p.x + CHAR_W / 2]];
   return (
     <ImageOverlay
       url={spriteFor(ghost.chosenCharacter)}
@@ -116,14 +123,10 @@ function GhostOverlay({ ghost, onSelect }: { ghost: Ghost; onSelect?: (ghost: Gh
       eventHandlers={{
         add: (e) => {
           const el = (e.target as L.ImageOverlay).getElement();
-          if (el) {
-            el.style.imageRendering = "pixelated";
-            el.style.opacity = "0.6";
-            el.style.filter = `drop-shadow(0 0 4px ${ghost.color ?? "#fff"}) drop-shadow(0 0 6px ${ghost.color ?? "#fff"})`;
-            el.style.cursor = "pointer";
-          }
+          if (el) { el.style.imageRendering = "pixelated"; el.style.opacity = "0.6";
+            el.style.filter = `drop-shadow(0 0 4px ${ghost.color ?? "#fff"}) drop-shadow(0 0 6px ${ghost.color ?? "#fff"})`; el.style.cursor = "pointer"; }
         },
-        click: () => onSelect?.(ghost),
+        click: (e) => { const cp = map.latLngToContainerPoint(e.latlng); onSelectCluster({ x: cp.x, y: cp.y }); },
       }}
     />
   );
@@ -265,7 +268,6 @@ export function MapView({
   openedQuestIds,
   onSelectRunner,
   ghosts,
-  onSelectGhost,
 }: {
   members: Member[];
   fellowshipMiles: number;
@@ -276,7 +278,6 @@ export function MapView({
   openedQuestIds: string[];
   onSelectRunner: (members: Member[], pt: { x: number; y: number }) => void;
   ghosts?: Ghost[];
-  onSelectGhost?: (ghost: Ghost) => void;
 }) {
   const [t, setT] = useState(0);
   const [following, setFollowing] = useState(true);
@@ -327,12 +328,20 @@ export function MapView({
   // Tapping a runner returns everyone within CLUSTER_DIST so the UI can offer a
   // "fan-out" picker instead of guessing which stacked character was meant.
   const CLUSTER_DIST = 42;
-  const runnerPos = members.map((m, i) => {
-    const p = positionForMiles(m.totalMiles * t, ROUTE_WAYPOINTS);
-    return { x: p.x + (i - (count - 1) / 2) * STAGGER, y: p.y };
-  });
-  const clusterFor = (idx: number): Member[] =>
-    members.filter((_, j) => Math.hypot(runnerPos[idx].x - runnerPos[j].x, runnerPos[idx].y - runnerPos[j].y) <= CLUSTER_DIST);
+  const ghostList = ghosts ?? [];
+  // Combined selectable set: members (staggered) + ghosts (each mapped to a Member-shaped entry).
+  const selectable: { member: Member; x: number; y: number }[] = [
+    ...members.map((m, i) => {
+      const p = positionForMiles(m.totalMiles * t, ROUTE_WAYPOINTS);
+      return { member: m, x: p.x + (i - (count - 1) / 2) * STAGGER, y: p.y };
+    }),
+    ...ghostList.map((g) => {
+      const p = positionForMiles(g.totalMiles, ROUTE_WAYPOINTS);
+      return { member: ghostToMember(g), x: p.x, y: p.y };
+    }),
+  ];
+  const clusterAt = (x: number, y: number): Member[] =>
+    selectable.filter((s) => Math.hypot(s.x - x, s.y - y) <= CLUSTER_DIST).map((s) => s.member);
 
   // Open zoomed-in at the Shire; the camera follows from there during the intro.
   // minZoom = cover so the user can zoom back out to see the whole map.
@@ -372,11 +381,16 @@ export function MapView({
         );
       })}
 
-      {members.map((m, i) => (
-        <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} onSelect={onSelectRunner} cluster={clusterFor(i)} />
-      ))}
+      {members.map((m, i) => {
+        const p = positionForMiles(m.totalMiles * t, ROUTE_WAYPOINTS);
+        const x = p.x + (i - (count - 1) / 2) * STAGGER;
+        return <RunnerOverlay key={m.id} member={m} miles={m.totalMiles * t} offsetX={(i - (count - 1) / 2) * STAGGER} onSelect={onSelectRunner} cluster={clusterAt(x, p.y)} />;
+      })}
 
-      {ghosts?.map((g) => <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} onSelect={onSelectGhost} />)}
+      {ghostList.map((g) => {
+        const p = positionForMiles(g.totalMiles, ROUTE_WAYPOINTS);
+        return <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} onSelectCluster={(pt) => onSelectRunner(clusterAt(p.x, p.y), pt)} />;
+      })}
 
       {SIDE_QUESTS.filter((q) => q.revealMiles <= myMiles && !openedQuestIds.includes(q.id)).map((q) => (
         <QuestOverlay key={q.id} quest={q} onOpen={onOpenQuest} />
