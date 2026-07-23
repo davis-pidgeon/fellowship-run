@@ -315,3 +315,25 @@ body { margin: 0; }
   border: 1px solid #4a3a26; border-radius: 6px; padding: 10px; font-family: Georgia, serif;
   font-size: 15px; cursor: pointer; }
 .admin-link-btn:hover { background: #2a2013; border-color: #c0392b; }
+
+/* Global fellowship ranking panel */
+.global-panel { position: absolute; left: 12px; bottom: 12px; width: 264px;
+  background: rgba(26,20,8,0.92); color: #e8dcc0; border: 2px solid #6b5a2e;
+  border-radius: 12px; padding: 12px; font-family: Georgia, serif; z-index: 1000;
+  transition: width .38s cubic-bezier(.22,.9,.28,1), height .38s cubic-bezier(.22,.9,.28,1),
+    left .38s cubic-bezier(.22,.9,.28,1), top .38s cubic-bezier(.22,.9,.28,1),
+    right .38s cubic-bezier(.22,.9,.28,1), bottom .38s cubic-bezier(.22,.9,.28,1); }
+.global-panel.expanded { left: 5vw; right: 5vw; top: 8vh; bottom: 8vh; width: auto; overflow-y: auto; }
+.global-panel-head { color: #f0d97a; font-size: 15px; margin-bottom: 8px; }
+.metric-toggle { display: flex; gap: 4px; background: #0f0b04; border-radius: 8px; padding: 3px; margin-bottom: 8px; }
+.metric-toggle button { flex: 1; border: 0; background: transparent; color: #b8a878; font-size: 12px; padding: 5px; border-radius: 6px; cursor: pointer; }
+.metric-toggle button[aria-pressed="true"] { background: #6b5a2e; color: #fff; }
+.rank-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; }
+.rank-row.me { background: rgba(240,217,122,.08); border-radius: 6px; }
+.rank-rk { width: 20px; text-align: center; color: #9a8a5a; }
+.rank-nm { flex: 1; }
+.rank-val { color: #f0d97a; font-weight: 600; }
+.mini-head { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: #9a8a5a; margin: 8px 0 4px; }
+.global-cols { display: flex; gap: 20px; }
+.global-cols > div { flex: 1; }
+.expand-btn { width: 100%; margin-top: 8px; background: #2a2210; border: 1px solid #6b5a2e; color: #f0d97a; border-radius: 7px; padding: 6px; font-size: 12px; cursor: pointer; }

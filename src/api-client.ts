@@ -48,12 +48,17 @@ export interface Ghost {
   stats: Member["stats"];
   openedQuests: string[];
 }
+export interface RankingRow {
+  id: string; name: string; pooledMiles: number; memberCount: number;
+  weekPooled: number; weekPerCapita: number; isProgressLeader: boolean;
+}
 export interface GlobalResponse {
   user: MeResponse["user"];
   isAdmin: boolean;
   fellowships: FellowshipSummary[];
   global: true;
   ghosts: Ghost[];
+  rankings: RankingRow[];
 }
 export interface SyncResponse {
   importedCount: number;
