@@ -1235,9 +1235,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const pooledAfter = memberTotal(allMemberActivities, fellowship);
     // The syncing user is always a member of every fellowship in this loop
     // (fellowships came from their own memberships), and this endpoint only
-    // ever adds activities for that one user — so "before" is always the
-    // pooled total minus exactly what this sync just added.
-    const addedPooled = newActivities.reduce((s, a) => s + a.distanceMiles, 0);
+    // ever adds activities for that one user — so "before" is the pooled
+    // total minus whatever this sync added that counts toward THIS
+    // fellowship specifically (memberTotal applies this fellowship's own
+    // type/date filter — newActivities can include types/dates that belong
+    // to a different fellowship the user is also in).
+    const addedPooled = memberTotal(newActivities, fellowship);
     const pooledBefore = pooledAfter - addedPooled;
     if (fellowship.id === viewFellowshipId) responseFellowshipMiles = pooledAfter;
 
@@ -1336,7 +1339,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const fellowship: Fellowship = { id: f.id, name: f.name, startDate: f.start_date, allowedActivityTypes: f.allowed_activity_types };
       const { data: acts } = await db.from("activities").select("distance_miles, run_date, sport_type").eq("user_id", u.id);
       const activities: RunActivity[] = (acts ?? []).map((a) => ({
-        stravaActivityId: 0, distanceMiles: a.distance_miles, runDate: a.run_date, name: "", sportType: a.sport_type,
+        stravaActivityId: 0, distanceMiles: a.distance_miles ?? 0, runDate: a.run_date, name: "", sportType: a.sport_type,
       }));
       ghosts.push({
         userId: u.id, fellowshipId: f.id, fellowshipName: f.name,
@@ -1534,7 +1537,7 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function stravaAuthUrl(clientId: string | null, inviteToken?: string): string {
+export function stravaAuthUrl(clientId?: string | null, inviteToken?: string): string {
   const params = new URLSearchParams({
     client_id: clientId ?? import.meta.env.VITE_STRAVA_CLIENT_ID,
     redirect_uri: import.meta.env.VITE_STRAVA_REDIRECT_URI,
@@ -2244,7 +2247,19 @@ Add `ghosts?: import("../api-client").Ghost[]` to `MapView`'s props type, and �
 {ghosts?.map((g) => <GhostOverlay key={`${g.userId}-${g.fellowshipId}`} ghost={g} />)}
 ```
 
-When `ghosts` is passed, `MapView` should render with `members={[]}` from the caller (Dashboard) so no trails/interactive runners/fellowship-ring/sync-driven camera-follow render alongside the ghosts — no change needed inside `MapView` itself for that, since an empty `members` array already naturally produces none of those.
+When `ghosts` is passed, `MapView` should render with `members={[]}` from the caller (Dashboard) so no trails/interactive runners/sync-driven camera-follow render alongside the ghosts — an empty `members` array naturally produces none of those, since they're all keyed off `members.map(...)`. The pooled-Fellowship ring marker is a separate case: it has no dependency on `members` at all (it's positioned from the `fellowshipMiles` prop alone), so it needs an explicit guard. Change:
+
+```tsx
+<Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon} interactive={false} />
+```
+
+to:
+
+```tsx
+{!ghosts && <Marker position={[latFor(fPos.y), fPos.x]} icon={fellowshipIcon} interactive={false} />}
+```
+
+(`ghosts` is `undefined` in fellowship view and always an array — including possibly empty — in Global view, so `!ghosts` correctly distinguishes the two.)
 
 - [ ] **Step 2: Wire ghosts through `Dashboard.tsx`**
 
