@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 .DS_Store
 .vercel
 .env*
+.mcp.json
