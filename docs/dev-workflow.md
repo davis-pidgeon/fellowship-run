@@ -39,6 +39,12 @@ vercel dev            # frontend + /api on http://localhost:3000, against the ST
 npm test              # full Vitest suite
 ```
 
+`vercel dev` injects function env from a plain **`.env`** file (this project's
+Vercel *Development* target is empty, and `.env.local` is a Vite-only
+convention). So `.env` is symlinked to `.env.local` — edit `.env.local` (or
+`vercel env pull` it) and both the frontend and the functions pick it up.
+Reseed stage data anytime with `scripts/seed-test.sql`.
+
 Strava OAuth locally needs the Strava app's Authorization Callback Domain to
 include `localhost` (redirects use `http://localhost:3000`).
 
