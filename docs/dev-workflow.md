@@ -1,80 +1,70 @@
 # Dev Workflow & Environments
 
-How changes flow from local → test → prod for this project, and the division of
-labor between Claude and the human. Every prod/outward action stops for explicit
-human approval.
+This is a small app for the maintainer and friends — "prod" just means "the live
+app my friends use," not a high-stakes production system. Claude owns the whole
+pipeline (stage **and** prod); the human approves promotions to prod.
 
 ## Environments
 
-| Env | Supabase | Vercel | Who operates it |
-|-----|----------|--------|-----------------|
-| **Local / test** | Test project `plnfdfszuzomoumowasz` (`https://plnfdfszuzomoumowasz.supabase.co`) | none — runs via `vercel dev` on the machine | **Claude** applies schema, seeds data, validates |
-| **Prod** | Prod project `qdwuzvztnzxtouowjmjx` | `fellowship-run` (`fellowship-run.vercel.app`) | **Human runs every prod step**, after approving Claude's prepared commands |
+| Env | Supabase | Vercel | Notes |
+|-----|----------|--------|-------|
+| **Stage** | `plnfdfszuzomoumowasz` (`https://plnfdfszuzomoumowasz.supabase.co`) | Preview deploys + local `vercel dev` | Claude applies schema, seeds data, validates freely — no approval needed |
+| **Prod** | `qdwuzvztnzxtouowjmjx` | `fellowship-run` (`fellowship-run.vercel.app`, Production) | Real friend data (≈9 users). Claude executes changes here too, but only **after the human approves** |
 
-There is intentionally **no deployed test environment** — "test" means local
-`vercel dev` against the test Supabase project.
+Both databases share one set of migration files as the source of truth, so they
+stay in lockstep.
 
-## Tooling setup (one-time)
+## Tooling
 
-- **Supabase MCP:** `.mcp.json` (gitignored, local-only) configures a **single**
-  server `supabase-test` pointed at the test project. Claude has **no** prod DB
-  connection by design, so it can never write to prod.
-  - MCP config loads at Claude Code **startup**. After editing `.mcp.json`,
-    **restart Claude Code** (or reconnect via `/mcp`) for the change to take
-    effect — it does not hot-swap mid-session.
-- **Vercel:** repo is linked to `fellowship81/fellowship-run` (`.vercel/`,
-  gitignored). Local API runs via `vercel dev`.
-- **Local env:** `.env.local` (gitignored) holds **test** DB creds + generated
-  local secrets. Three values must be filled by the human (Claude can't read
-  them): `SUPABASE_SERVICE_ROLE_KEY` (test project), `STRAVA_CLIENT_ID`,
-  `STRAVA_CLIENT_SECRET` (and mirror the client id into `VITE_STRAVA_CLIENT_ID`).
-- `.mcp.json`, `.env.local`, `.vercel/` are all gitignored — never committed.
+- **Supabase MCP** (`.mcp.json`, gitignored) configures **two** servers:
+  `supabase-stage` and `supabase-prod`. Claude uses `mcp__supabase-stage__*`
+  freely and `mcp__supabase-prod__*` only on an approved prod promotion.
+  - MCP config loads at Claude Code **startup** — after editing `.mcp.json`,
+    **restart Claude Code** (or `/mcp` reconnect) for both servers to connect.
+- **Vercel** (CLI, logged in as `davis-pidgeon` / team `fellowship81`): repo
+  linked to `fellowship-run` (`.vercel/`, gitignored). Claude runs deploys.
+  - Production env vars point at **prod** Supabase (set 21d ago).
+  - `CRON_SECRET` still needs adding to prod (`vercel env add CRON_SECRET production`).
+- **Local env** (`.env.local`, gitignored): pulled from prod Vercel env (Strava
+  creds + secrets reused), then repointed at the **stage** DB with
+  `localhost:3000` redirects and a generated `CRON_SECRET`. The only value the
+  human must fill is `SUPABASE_SERVICE_ROLE_KEY` for the **stage** project
+  (Supabase dashboard → stage project → Settings → API).
+- `.mcp.json`, `.env.local`, `.vercel/` are all gitignored.
 
 ## Running locally
 
 ```bash
-vercel dev            # serves frontend + /api functions on http://localhost:3000
-npm test              # full Vitest suite (pure logic, API helpers, components)
+vercel dev            # frontend + /api on http://localhost:3000, against the STAGE DB
+npm test              # full Vitest suite
 ```
 
-`vercel dev` reads `.env.local`, so the local API talks to the **test** DB.
-Strava OAuth locally requires the Strava app's Authorization Callback Domain to
-include `localhost`; redirect URIs in `.env.local` use `http://localhost:3000`.
+Strava OAuth locally needs the Strava app's Authorization Callback Domain to
+include `localhost` (redirects use `http://localhost:3000`).
 
-## Per-change workflow
+## Per-change pipeline (Claude drives all of it)
 
-1. **Branch + code.** New branch off `main`; write code and, for any schema
-   change, a numbered migration file in `supabase/migrations/` (the source of
-   truth — the same file is later applied to prod).
-2. **Apply to TEST.** Claude applies the migration to the test DB via
-   `mcp__supabase-test__apply_migration` and seeds any needed data via
-   `mcp__supabase-test__execute_sql` (reusable seed SQL lives in `scripts/`).
-3. **Validate locally.** `npm test` green, then drive the real flow in
-   `vercel dev` against the test DB. Confirm behavior end-to-end.
-4. **Human approval gate.** Claude summarizes what's ready and what the prod
-   rollout will do.
-5. **PROD rollout (human runs, after approval).** Claude produces exact,
-   copy-paste steps; the human executes them:
-   - **Schema:** paste the migration SQL into the prod project's Supabase SQL
-     editor (or `supabase db push` if the CLI is set up).
-   - **Vercel env:** `vercel env add <NAME> production` for any new vars.
-   - **Deploy:** `vercel --prod`.
+1. **Branch + code**, with any schema change written as a numbered file in
+   `supabase/migrations/` (the source of truth applied to both DBs).
+2. **Stage (no approval):** apply the migration to stage
+   (`mcp__supabase-stage__apply_migration`), seed data
+   (`mcp__supabase-stage__execute_sql`, reusable SQL in `scripts/`), run
+   `npm test`, and validate the real flow in `vercel dev` (or a Preview deploy).
+3. **Approval gate:** Claude summarizes what changed and exactly what the prod
+   promotion will run.
+4. **Prod (after approval — Claude executes):**
+   - apply the same migration via `mcp__supabase-prod__apply_migration`,
+   - `vercel env add …` for any new vars,
+   - `vercel --prod` to deploy,
+   - verify.
 
-## Prod handoff format
+Claude never promotes to prod without an explicit "go." Everything on stage is
+free-running.
 
-When a change is validated on test, Claude hands over a **PROD ROLLOUT** block:
-- the exact migration SQL to run on prod,
-- each `vercel env add …` command with which value/environment,
-- the deploy command,
-- anything to verify after.
+## Current change: global-rankings
 
-Claude never executes these against prod — the human does.
-
-## Current change: global-rankings (in progress)
-
-Outstanding prod steps for when this ships (do NOT run until approved):
-- Apply `supabase/migrations/0006_weekly_awards.sql` to **prod**.
-- `vercel env add CRON_SECRET production` (generate with `openssl rand -hex 32`).
-- Deploy `vercel --prod`.
-- (Optional cleanup) the prod `backup_users_legacy_fellowship_20260720` table has
-  RLS disabled — decide whether to drop it or enable RLS.
+- Stage: `weekly_awards` migration applied by the human. Claude will confirm it,
+  seed weekly-winner test data, and validate locally.
+- Prod promotion (pending approval): apply `0006_weekly_awards.sql`, add
+  `CRON_SECRET`, deploy `--prod`. (Prod also has a pre-existing RLS-disabled
+  `backup_users_legacy_fellowship_20260720` table to drop or lock down.)
